@@ -1,0 +1,92 @@
+/* ===== LAYOUT SKELETON ===== */
+.layout { display: flex; min-height: 100vh; min-height: 100dvh; }
+
+/* Main area */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-width: 0;
+}
+
+/* Top bar */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  min-width: 0;
+}
+
+.topbar h2 {
+  font-size: clamp(13px, 2vw, 15px);
+  font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.topbar-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.topbar-alerts {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--red-50);
+  color: var(--red-600);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+}
+
+/* Content area */
+.content { padding: clamp(12px, 3vw, 24px); flex: 1; }
+
+/* Section visibility */
+.section { display: none; }
+.section.active { display: block; }
+
+/* Page headers */
+.page-header { margin-bottom: 16px; }
+.page-header h3 { font-size: clamp(15px, 2.5vw, 18px); font-weight: 600; color: var(--text); }
+.page-header p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.page-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.page-header-row > div { min-width: 0; }
+
+/* 2-column grid utility */
+.grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+/* Overlay for sidebar (mobile) */
+.overlay-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 90; }
+.overlay-bg.open { display: block; }
