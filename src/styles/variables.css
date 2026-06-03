@@ -1,0 +1,37 @@
+/* ===== DESIGN TOKENS ===== */
+:root {
+  /* Colors */
+  --teal-50: #E1F5EE; --teal-100: #9FE1CB; --teal-400: #1D9E75;
+  --teal-600: #0F6E56; --teal-800: #085041; --teal-900: #04342C;
+  --amber-50: #FAEEDA; --amber-400: #BA7517; --amber-600: #854F0B; --amber-800: #633806;
+  --red-50: #FCEBEB; --red-400: #E24B4A; --red-600: #A32D2D; --red-800: #791F1F;
+  --blue-50: #E6F1FB; --blue-400: #378ADD; --blue-600: #185FA5;
+  --green-50: #EAF3DE; --green-400: #639922; --green-600: #3B6D11;
+  --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-400: #888780;
+  --gray-600: #5F5E5A; --gray-800: #444441;
+
+  /* Semantic */
+  --bg: #F7F6F2;
+  --surface: #FFFFFF;
+  --surface2: #F1EFE8;
+  --text: #1A1916;
+  --text-muted: #5F5E5A;
+  --text-hint: #B4B2A9;
+  --border: rgba(68, 68, 65, 0.12);
+  --border-md: rgba(68, 68, 65, 0.22);
+
+  /* Shape */
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Shadow */
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+
+  /* Layout dimensions */
+  --sidebar-w: 220px;
+  --topbar-h: 56px;
+  --bnav-h: 60px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}

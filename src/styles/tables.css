@@ -1,0 +1,47 @@
+/* ===== TABLES (Desktop) ===== */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  -webkit-overflow-scrolling: touch;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 560px; }
+thead tr { background: var(--gray-50); }
+
+th {
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--gray-50);
+  z-index: 1;
+}
+
+td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--teal-50); }
+
+.td-hn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--teal-600);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.td-muted { color: var(--text-muted); }
