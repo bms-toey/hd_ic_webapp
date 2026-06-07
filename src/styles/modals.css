@@ -2,24 +2,27 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .4);
+  background: rgba(7, 27, 51, .5);
   z-index: 200;
   display: none;
   align-items: flex-end;
   justify-content: center;
+  padding: 0;
+  backdrop-filter: blur(8px);
 }
 
 .modal-overlay.open { display: flex; }
 
 .modal {
   background: var(--surface);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: 20px 16px;
-  padding-bottom: max(20px, calc(20px + var(--safe-b)));
+  border-radius: 24px 24px 0 0;
+  padding: 0;
   width: 100%;
+  max-width: 100%;
   max-height: 92dvh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  overflow-x: hidden;
+  box-shadow: 0 24px 70px rgba(7,27,51,.22);
   animation: modalUp .25s ease;
 }
 
@@ -32,17 +35,166 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
-  gap: 8px;
+  gap: 10px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+  flex-shrink: 0;
+  background: var(--surface);
 }
 
-.modal-header h4 { font-size: 15px; font-weight: 600; word-break: break-word; flex: 1; }
+.modal-header h4 {
+  font-size: clamp(16px, 1.25vw, 20px);
+  font-weight: 800;
+  color: var(--navy-900);
+  word-break: break-word;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.modal-context {
+  display: grid;
+  gap: 3px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(40,182,138,.22);
+  border-left: 4px solid var(--teal-400);
+  border-radius: 16px;
+  background: var(--teal-50);
+  color: var(--teal-800);
+  line-height: 1.4;
+}
+
+.modal-context strong {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.modal-context span {
+  font-size: 11.5px;
+  color: var(--teal-800);
+}
 
 .modal-footer {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 14px;
-  padding-top: 12px;
+  align-items: center;
+  margin: 0;
+  padding: 12px 16px max(12px, calc(12px + var(--safe-b)));
   border-top: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 -12px 28px rgba(16,32,51,.06);
+  flex-shrink: 0;
+}
+
+.modal-delete {
+  margin-right: auto;
+  order: 0;
+}
+
+.modal-footer .btn-ghost { order: 1; }
+.modal-footer .btn-outline { order: 1; }
+.modal-footer .btn-primary { order: 2; }
+.modal-footer .btn-danger:not(.modal-delete) { order: 2; }
+
+/* ===== DATA ENTRY MODALS ===== */
+.entry-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  max-height: min(88dvh, 820px);
+}
+
+.entry-modal .modal-header {
+  min-height: 74px;
+  padding: 16px 20px 14px;
+  margin: 0;
+}
+
+.entry-modal .modal-header h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.entry-modal .modal-context {
+  margin-bottom: 4px;
+}
+
+.modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 20px 18px;
+  scroll-padding-bottom: 24px;
+  background:
+    linear-gradient(180deg, rgba(248,251,253,.72), rgba(255,255,255,1) 120px),
+    var(--surface);
+}
+
+.entry-modal .form-grid,
+.entry-modal .form-grid-3,
+.entry-modal .form-grid-4,
+.entry-modal .form-row {
+  gap: 8px 10px;
+}
+
+.entry-modal .field {
+  gap: 5px;
+}
+
+.entry-modal .field label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.entry-modal .field input,
+.entry-modal .field select,
+.entry-modal .field textarea {
+  background: #fff;
+}
+
+.entry-modal .section-label {
+  margin-top: 6px;
+  margin-bottom: 2px;
+  padding: 6px 0 5px;
+  border-bottom-color: var(--border);
+}
+
+.entry-modal .cb-group {
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface2);
+}
+
+.entry-modal .modal-footer {
+  position: relative;
+  z-index: 1;
+  min-height: 68px;
+  margin: 0;
+  padding: 12px 20px max(12px, calc(12px + var(--safe-b)));
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* ===== SETTINGS ACTION MODAL ===== */
+.settings-action-modal {
+  max-width: min(520px, calc(100vw - 28px));
+}
+
+.settings-action-modal .modal-body {
+  padding-top: 16px;
+  padding-bottom: 18px;
+  background: var(--surface);
+}
+
+.settings-action-modal .field input {
+  min-height: 48px;
+  font-size: 14px;
 }

@@ -4,15 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0F6E56">
+  <meta name="color-scheme" content="light">
+  <meta name="format-detection" content="telephone=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="HD-IC">
   <meta name="description" content="ระบบ Infection Control ผู้ป่วยไตเทียม HD-IC System">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="img/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
   <title>HD-IC System — ระบบ IC ผู้ป่วยไตเทียม</title>
 
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <!-- Styles (order matters) -->
   <link rel="stylesheet" href="src/styles/variables.css">
@@ -24,7 +28,7 @@
   <link rel="stylesheet" href="src/styles/navigation.css">
   <link rel="stylesheet" href="src/styles/responsive.css">
 </head>
-<body>
+<body class="auth-pending">
 
 <div class="overlay-bg" id="overlay" onclick="closeSidebar()"></div>
 
@@ -33,8 +37,12 @@
   <!-- ═══════════ SIDEBAR ═══════════ -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <h1>🏥 HD-IC System</h1>
-      <p>v2.0 · Infection Control</p>
+      <div class="sidebar-brand-mark" aria-hidden="true">HD</div>
+      <div>
+        <h1>HD-IC System</h1>
+        <p>v2.0 · Infection Control</p>
+      </div>
+      <button class="sidebar-collapse" onclick="toggleSidebarCollapse()" aria-label="ย่อ/ขยายเมนู">‹</button>
     </div>
 
     <div class="nav-group">
@@ -66,9 +74,6 @@
       <div class="nav-item" onclick="showSection('surveillance',this)">
         <span class="icon">📈</span> Surveillance
       </div>
-      <div class="nav-item" onclick="showSection('monthlyreport',this)">
-        <span class="icon">📊</span> สรุปรายเดือน
-      </div>
     </div>
 
     <div class="nav-group">
@@ -76,11 +81,14 @@
       <div class="nav-item" onclick="showSection('report',this)">
         <span class="icon">📋</span> รายงาน / Export
       </div>
+      <div class="nav-item" onclick="showSection('settings',this)">
+        <span class="icon">⚙</span> ตั้งค่า
+      </div>
     </div>
 
     <div class="sidebar-footer">
       <p id="sidebar-today"></p>
-      <p style="margin-top:2px">Thai HD-IC Standard</p>
+      <p class="mt-2">Thai HD-IC Standard</p>
     </div>
   </nav>
 
@@ -90,22 +98,29 @@
     <!-- Top bar -->
     <header class="topbar">
       <button class="hamburger" onclick="toggleSidebar()" aria-label="เมนู">☰</button>
-      <h2 id="topbar-title">ภาพรวม (Dashboard)</h2>
+      <div class="topbar-heading">
+        <span class="breadcrumb" id="topbar-breadcrumb">HD-IC / Dashboard</span>
+        <h2 id="topbar-title">ภาพรวม (Dashboard)</h2>
+        <p id="topbar-desc">สรุปสถานะผู้ป่วยไตเทียมและการเฝ้าระวังการติดเชื้อ</p>
+      </div>
       <span class="topbar-date" id="topbar-date"></span>
+      <button class="topbar-action primary-action" onclick="refreshActiveSection()">
+        <span>↻</span><span>Refresh</span>
+      </button>
       <button class="topbar-alerts" id="topbar-alerts"
               onclick="showSection('serology',document.querySelector('.nav-item:nth-child(3)'))">
         <span>⚠</span><span id="topbar-alert-txt">ตรวจสอบ</span>
       </button>
+      <button class="topbar-alerts auth-chip" onclick="showSection('report',document.querySelector('.nav-item:last-child'))">
+        <span class="avatar" data-auth-initial>HD</span><span data-auth-user>-</span><span class="badge badge-info" data-auth-role>-</span>
+      </button>
+      <button class="topbar-action logout-chip" onclick="logout()" aria-label="ออกจากระบบ"><span>↪</span><span>ออกจากระบบ</span></button>
     </header>
 
     <main class="content">
 
       <!-- ──────────── DASHBOARD ──────────── -->
       <div id="dashboard" class="section active">
-        <div class="page-header">
-          <h3>ภาพรวม Infection Control</h3>
-          <p>สรุปสถานะผู้ป่วยไตเทียมและการเฝ้าระวังการติดเชื้อ</p>
-        </div>
         <div id="dash-alerts"></div>
         <div class="stat-grid" id="dash-stats"></div>
         <div class="grid-2col">
@@ -126,15 +141,11 @@
 
       <!-- ──────────── PATIENT ──────────── -->
       <div id="patient" class="section">
-        <div class="page-header-row">
-          <div>
-            <h3>ทะเบียนผู้ป่วยไตเทียม</h3>
-            <p>จัดการข้อมูลผู้ป่วย HD ทุกราย</p>
-          </div>
-          <button class="btn btn-primary" onclick="openPatientModal()">＋ เพิ่มผู้ป่วย</button>
-        </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>รายชื่อผู้ป่วยทั้งหมด</div>
+          <div class="card-title card-title-row">
+            <span class="card-title-text"><span class="dot"></span>รายชื่อผู้ป่วยทั้งหมด</span>
+            <button class="btn btn-primary btn-sm" data-permission="patient.write" onclick="openPatientModal()">＋ เพิ่มผู้ป่วย</button>
+          </div>
           <div class="search-row">
             <input id="pt-search" placeholder="🔍 ค้นหา HN หรือชื่อ..." oninput="renderTable('patient')">
             <select id="pt-filter" onchange="renderTable('patient')">
@@ -150,15 +161,11 @@
 
       <!-- ──────────── SEROLOGY ──────────── -->
       <div id="serology" class="section">
-        <div class="page-header-row">
-          <div>
-            <h3>บันทึกผล Serology</h3>
-            <p>HBV / HCV / HIV — ตามมาตรฐาน CDC & KDIGO</p>
-          </div>
-          <button class="btn btn-primary" onclick="openSeroModal()">＋ บันทึกผล</button>
-        </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>ประวัติการตรวจ Serology</div>
+          <div class="card-title card-title-row">
+            <span class="card-title-text"><span class="dot"></span>ประวัติการตรวจ Serology</span>
+            <button class="btn btn-primary btn-sm" data-permission="clinical.write" onclick="openSeroModal()">＋ บันทึกผล</button>
+          </div>
           <div class="search-row">
             <input id="sero-search" placeholder="🔍 ค้นหา HN / ชื่อ..." oninput="renderTable('serology')">
             <select id="sero-filter" onchange="renderTable('serology')">
@@ -173,15 +180,11 @@
 
       <!-- ──────────── ACCESS ──────────── -->
       <div id="access" class="section">
-        <div class="page-header-row">
-          <div>
-            <h3>Vascular Access &amp; Exit Site</h3>
-            <p>ประเมิน Exit Site ตาม CDC HD Infection Surveillance</p>
-          </div>
-          <button class="btn btn-primary" onclick="openAccessModal()">＋ บันทึก Access</button>
-        </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>ประวัติ Vascular Access</div>
+          <div class="card-title card-title-row">
+            <span class="card-title-text"><span class="dot"></span>ประวัติ Vascular Access</span>
+            <button class="btn btn-primary btn-sm" data-permission="clinical.write" onclick="openAccessModal()">＋ บันทึก Access</button>
+          </div>
           <div class="search-row">
             <input id="acc-search" placeholder="🔍 ค้นหา HN / ชื่อ..." oninput="renderTable('access')">
             <select id="acc-filter" onchange="renderTable('access')">
@@ -198,15 +201,11 @@
 
       <!-- ──────────── INFECTION ──────────── -->
       <div id="infection" class="section">
-        <div class="page-header-row">
-          <div>
-            <h3>Infection Events</h3>
-            <p>CRBSI / BSI / Seroconversion — ตามนิยาม CDC NHSN</p>
-          </div>
-          <button class="btn btn-primary" onclick="openInfModal()">＋ บันทึก Infection</button>
-        </div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span>ประวัติ Infection Events ทั้งหมด</div>
+          <div class="card-title card-title-row">
+            <span class="card-title-text"><span class="dot"></span>ประวัติ Infection Events ทั้งหมด</span>
+            <button class="btn btn-primary btn-sm" data-permission="clinical.write" onclick="openInfModal()">＋ บันทึก Infection</button>
+          </div>
           <div class="search-row">
             <input id="inf-search" placeholder="🔍 ค้นหา HN / ชื่อ / เชื้อ..." oninput="renderTable('infection')">
             <select id="inf-filter" onchange="renderTable('infection')">
@@ -221,10 +220,6 @@
 
       <!-- ──────────── SURVEILLANCE ──────────── -->
       <div id="surveillance" class="section">
-        <div class="page-header">
-          <h3>Surveillance &amp; Outbreak Monitoring</h3>
-          <p>เฝ้าระวังอัตราการติดเชื้อ ตามมาตรฐาน CDC NHSN HD Module</p>
-        </div>
         <div class="stat-grid" id="surv-stats"></div>
         <div class="grid-2col">
           <div class="card">
@@ -246,54 +241,118 @@
         </div>
       </div>
 
-      <!-- ──────────── MONTHLY REPORT ──────────── -->
-      <div id="monthlyreport" class="section">
-        <div class="page-header">
-          <h3>สรุปข้อมูลรายเดือน</h3>
-          <p>CRBSI Surveillance — จำนวนสายสวน และการติดเชื้อ</p>
-        </div>
-        <div class="card">
-          <div class="card-title"><span class="dot"></span>เลือกช่วงเวลา</div>
-          <div class="form-grid-4">
-            <div class="field"><label>เดือนที่ 1</label><input type="month" id="monthly-from"></div>
-            <div class="field"><label>เดือนที่ 2</label><input type="month" id="monthly-to"></div>
-            <div class="field" style="justify-content:flex-end;padding-top:20px">
-              <button class="btn btn-primary" onclick="renderMonthlyReport()">📊 สร้างรายงาน</button>
-            </div>
-          </div>
-        </div>
-        <div id="monthly-output"></div>
-      </div>
-
       <!-- ──────────── REPORT / EXPORT ──────────── -->
       <div id="report" class="section">
-        <div class="page-header">
-          <h3>รายงาน IC &amp; จัดการข้อมูล</h3>
-          <p>สรุปรายงาน Export / Import ข้อมูล</p>
+        <div class="settings-tabs report-tabs" role="tablist" aria-label="Report sections">
+          <button class="settings-tab active" type="button" role="tab" aria-selected="true" data-report-tab="range" onclick="showReportPanel('range')">
+            <span>📋</span>
+            <strong>รายงานตามช่วงวันที่</strong>
+          </button>
+          <button class="settings-tab" type="button" role="tab" aria-selected="false" data-report-tab="monthly" onclick="showReportPanel('monthly')">
+            <span>📊</span>
+            <strong>สรุปข้อมูลรายเดือน / Export</strong>
+          </button>
         </div>
-        <div class="card">
-          <div class="card-title"><span class="dot"></span>สร้างรายงานตามช่วงเวลา</div>
-          <div class="form-row">
-            <div class="field"><label>จากวันที่</label><input type="date" id="rpt-from"></div>
-            <div class="field"><label>ถึงวันที่</label><input type="date" id="rpt-to"></div>
-            <div class="field" style="justify-content:flex-end;padding-top:20px">
-              <button class="btn btn-primary" onclick="generateReport()">📊 สร้างรายงาน</button>
+        <div data-report-panel="range">
+          <div class="card filter-card">
+            <div class="card-title"><span class="dot"></span>สร้างรายงานตามช่วงเวลา</div>
+            <div class="form-row">
+              <div class="field"><label>จากวันที่</label><input type="date" id="rpt-from"></div>
+              <div class="field"><label>ถึงวันที่</label><input type="date" id="rpt-to"></div>
+              <div class="field field-action">
+                <button class="btn btn-primary" onclick="generateReport()">📊 สร้างรายงาน</button>
+              </div>
             </div>
           </div>
+          <div id="rpt-output"></div>
         </div>
-        <div id="rpt-output"></div>
-        <div class="card">
-          <div class="card-title"><span class="dot"></span>จัดการข้อมูลระบบ</div>
-          <div class="btn-group">
-            <button class="btn btn-primary"  onclick="loadDemoData()">🧪 โหลด Demo Data</button>
-            <button class="btn btn-outline"  onclick="exportJSON()">⬇️ Export JSON</button>
-            <button class="btn btn-outline"  onclick="exportCSV()">📄 Export CSV</button>
-            <button class="btn btn-outline"  onclick="importJSON()">⬆️ Import JSON</button>
-            <button class="btn btn-danger"   onclick="clearAll()">🗑️ ล้างข้อมูลทั้งหมด</button>
+        <div data-report-panel="monthly" hidden>
+          <div class="card filter-card monthly-report-card">
+            <div class="card-title"><span class="dot"></span>สรุปข้อมูลรายเดือน</div>
+            <p class="hint-text mb-10">สร้างสรุปสำหรับ IC และ HD unit จากช่วงเดือนที่เลือก</p>
+            <div class="form-grid-4">
+              <div class="field"><label>เดือนที่ 1</label><input type="month" id="report-monthly-from"></div>
+              <div class="field"><label>เดือนที่ 2</label><input type="month" id="report-monthly-to"></div>
+              <div class="field field-action">
+                <button class="btn btn-primary" onclick="renderMonthlyReport('report-monthly')">📊 สร้างสรุปรายเดือน</button>
+              </div>
+            </div>
           </div>
-          <p style="font-size:11px;color:var(--text-hint);margin-top:10px">
-            ข้อมูลเก็บใน Local Storage · Export ข้อมูลสำรองไว้เป็นประจำ
-          </p>
+          <div id="report-monthly-output"></div>
+          <div class="card export-card">
+            <div class="card-title"><span class="dot"></span>จัดการข้อมูลระบบ</div>
+            <div class="btn-group">
+              <button class="btn btn-primary"  data-permission="data.admin" onclick="loadDemoData()">🧪 โหลด Demo Data</button>
+              <button class="btn btn-outline"  data-permission="data.export" onclick="exportJSON()">⬇️ Export JSON</button>
+              <button class="btn btn-outline"  data-permission="data.export" onclick="exportCSV()">📄 Export CSV</button>
+              <button class="btn btn-outline"  data-permission="data.import" onclick="importJSON()">⬆️ Import JSON</button>
+              <button class="btn btn-outline"  onclick="logout()">ออกจากระบบ</button>
+              <button class="btn btn-danger"   data-permission="data.admin" onclick="clearAll()">🗑️ ล้างข้อมูลทั้งหมด</button>
+            </div>
+            <p class="hint-text">
+              ข้อมูลเก็บใน Local Storage · Export ข้อมูลสำรองไว้เป็นประจำ
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─────────── SETTINGS ─────────── -->
+      <div id="settings" class="section">
+        <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+          <button class="settings-tab active" type="button" role="tab" aria-selected="true" data-settings-tab="options" onclick="showSettingsPanel('options')">
+            <span>⚙</span>
+            <strong>ตั้งค่าตัวเลือกทั้งหมด</strong>
+          </button>
+          <button class="settings-tab" type="button" role="tab" aria-selected="false" data-settings-tab="users" onclick="showSettingsPanel('users')">
+            <span>👤</span>
+            <strong>User Login</strong>
+          </button>
+        </div>
+
+        <div class="settings-grid">
+          <div class="card settings-card settings-options-card" data-settings-panel="options" data-permission="auth.admin">
+            <div class="settings-card-head">
+              <div>
+                <div class="card-title"><span class="dot"></span>ตั้งค่าตัวเลือกทั้งหมด</div>
+                <p class="hint-text">ตัวเลือกสำหรับฟอร์มและตัวกรองของระบบ</p>
+              </div>
+            </div>
+            <div class="settings-toolbar">
+              <div class="field">
+                <label>กลุ่มข้อมูล</label>
+                <select id="settings-group" onchange="renderSettingsOptions()"></select>
+              </div>
+              <div class="field">
+                <label>ตัวเลือกใหม่</label>
+                <input id="settings-option-new" placeholder="ระบุชื่อตัวเลือก...">
+              </div>
+              <button class="btn btn-primary settings-add-btn" onclick="addSettingOption()">＋ เพิ่มตัวเลือก</button>
+            </div>
+            <div id="settings-options-list" class="mt-12"></div>
+          </div>
+
+          <div class="card settings-card settings-users-card" data-settings-panel="users" data-permission="auth.admin" hidden>
+            <div class="settings-card-head">
+              <div>
+                <div class="card-title"><span class="dot"></span>User Login</div>
+                <p class="hint-text">บัญชีและสิทธิ์เข้าใช้งาน Backoffice</p>
+              </div>
+              <div class="auth-summary">
+                <span>เข้าสู่ระบบ:</span>
+                <strong data-auth-user>-</strong>
+                <span class="badge badge-info" data-auth-role>-</span>
+              </div>
+            </div>
+            <input type="hidden" id="user-edit-id">
+            <div class="settings-user-form mt-10">
+              <div class="field"><label>Username</label><input id="user-new-name" autocomplete="off"></div>
+              <div class="field"><label>Password</label><input id="user-new-password" type="password" autocomplete="new-password" placeholder="เว้นว่างถ้าไม่เปลี่ยน"></div>
+              <div class="field"><label>Role</label><select id="user-new-role"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select></div>
+              <button class="btn btn-primary" onclick="saveUserAccount()">บันทึกผู้ใช้</button>
+              <button class="btn btn-outline" onclick="clearUserForm()">ล้างฟอร์ม</button>
+            </div>
+            <div id="user-list" class="mt-12"></div>
+          </div>
         </div>
       </div>
 
@@ -304,31 +363,129 @@
 
 <!-- ═══════════ MODALS ═══════════ -->
 
+<!-- Login Modal -->
+<div class="modal-overlay open auth-login login-page" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+  <div class="login-shell">
+    <section class="login-hero" aria-label="แนะนำระบบ HD-IC">
+      <div class="login-hero-glow glow-a"></div>
+      <div class="login-hero-glow glow-b"></div>
+      <div class="login-hero-content">
+        <div class="secure-badge">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><path d="m9 12 2 2 4-5"></path></svg>
+          Secure Backoffice Access
+        </div>
+        <div>
+          <p class="login-eyebrow">HD Infection Control</p>
+          <h1>HD-IC System</h1>
+          <p class="login-hero-desc">ระบบบริหารจัดการข้อมูลและรายงานสำหรับ Backoffice</p>
+        </div>
+        <div class="dashboard-illustration" aria-hidden="true">
+          <div class="dash-window">
+            <div class="dash-bar"><span></span><span></span><span></span></div>
+            <div class="dash-grid">
+              <div class="dash-panel panel-main">
+                <span></span><strong></strong><em></em>
+              </div>
+              <div class="dash-panel chart-panel"><i></i><i></i><i></i><i></i></div>
+              <div class="dash-panel list-panel"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="floating-export">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+            Export
+          </div>
+        </div>
+        <div class="login-feature-grid">
+          <div><span>รายงาน</span><strong>Report</strong></div>
+          <div><span>Export</span><strong>CSV / JSON</strong></div>
+          <div><span>ผู้ใช้งาน</span><strong>Roles</strong></div>
+          <div><span>ความปลอดภัย</span><strong>Access</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-card" aria-label="เข้าสู่ระบบ">
+      <div class="login-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"></path></svg>
+        <span>HD</span>
+      </div>
+      <div class="login-card-heading">
+        <h4 id="login-title">เข้าสู่ระบบ HD-IC</h4>
+        <p>กรุณาเข้าสู่ระบบเพื่อจัดการข้อมูล รายงาน และการส่งออกข้อมูล</p>
+      </div>
+      <div class="login-alert" id="login-error" role="alert" aria-live="polite" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg>
+        <span>ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</span>
+      </div>
+      <div class="field login-field">
+        <label for="login-username">Username</label>
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <input id="login-username" autocomplete="username" value="admin" placeholder="Username" aria-describedby="login-help">
+        </div>
+      </div>
+      <div class="field login-field mt-12">
+        <label for="login-password">Password</label>
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <input id="login-password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน">
+          <button class="password-toggle" type="button" onclick="toggleLoginPassword()" aria-label="แสดงรหัสผ่าน" aria-pressed="false">
+            <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <svg class="icon-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="m2 2 20 20"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c6.5 0 10 8 10 8a17.7 17.7 0 0 1-3.1 4.4"></path><path d="M6.6 6.6C3.6 8.7 2 12 2 12s3.5 8 10 8a9.7 9.7 0 0 0 4.4-1"></path></svg>
+          </button>
+        </div>
+      </div>
+      <label class="remember-row">
+        <input id="login-remember" type="checkbox">
+        <span>จดจำการเข้าสู่ระบบ</span>
+      </label>
+      <button class="btn login-submit" id="login-submit" onclick="login()">
+        <span class="login-submit-text">เข้าสู่ระบบ</span>
+        <span class="login-spinner" aria-hidden="true"></span>
+      </button>
+      <p class="hint-text login-help" id="login-help">
+        ครั้งแรกใช้ admin / admin123 และเพิ่มผู้ใช้จริงในหน้า รายงาน / Export
+      </p>
+    </div>
+  </div>
+</div>
+
 <!-- Patient Modal -->
 <div class="modal-overlay" id="pt-modal">
-  <div class="modal modal-lg">
+  <div class="modal modal-lg entry-modal">
     <div class="modal-header">
       <h4 id="pt-modal-title">เพิ่มผู้ป่วยใหม่</h4>
       <button class="btn btn-icon btn-ghost" onclick="closePtModal()">✕</button>
     </div>
     <input type="hidden" id="pt-id">
+    <div class="modal-body">
+    <div class="modal-context" id="pt-context">
+      <strong>ข้อมูลหลักของผู้ป่วย</strong>
+      <span>กรอก HN และชื่อให้ครบก่อนบันทึก จากนั้นเพิ่มรายละเอียดการฟอกไตตามข้อมูลที่มี</span>
+    </div>
+    <div class="section-label">ข้อมูลระบุตัวตน</div>
     <div class="form-grid">
       <div class="field"><label>HN / รหัสผู้ป่วย <span class="required">*</span></label><input id="pt-hn" placeholder="HN-XXXXX"></div>
       <div class="field"><label>ชื่อ-นามสกุล <span class="required">*</span></label><input id="pt-name" placeholder="ชื่อ นามสกุล"></div>
     </div>
-    <div class="form-grid-3" style="margin-top:10px">
+    <div class="section-label">ข้อมูลพื้นฐาน</div>
+    <div class="form-grid-3">
       <div class="field"><label>วันเกิด</label><input type="date" id="pt-dob"></div>
       <div class="field"><label>เพศ</label><select id="pt-sex"><option value="">-- เลือก --</option><option>ชาย</option><option>หญิง</option></select></div>
       <div class="field"><label>วันที่เริ่ม HD</label><input type="date" id="pt-start"></div>
     </div>
-    <div class="form-grid-4" style="margin-top:10px">
+    <div class="section-label">ข้อมูลการฟอกไต</div>
+    <div class="form-grid-4">
       <div class="field"><label>สาเหตุ ESRD</label><select id="pt-cause"><option value="">--</option><option>DM Nephropathy</option><option>HT Nephropathy</option><option>Glomerulonephritis</option><option>PKD</option><option>SLE Nephritis</option><option>อื่นๆ</option></select></div>
       <div class="field"><label>Shift ฟอกไต</label><select id="pt-shift"><option value="">--</option><option>Shift 1 (เช้า)</option><option>Shift 2 (บ่าย)</option><option>Shift 3 (เย็น)</option></select></div>
       <div class="field"><label>Machine No.</label><input id="pt-machine" placeholder="HD-01"></div>
       <div class="field"><label>สถานะ</label><select id="pt-status"><option>Active</option><option>Transfer</option><option>Deceased</option><option>Transplant</option></select></div>
     </div>
-    <div class="field" style="margin-top:10px"><label>หมายเหตุ</label><input id="pt-note" placeholder="ข้อมูลเพิ่มเติม..."></div>
+    <div class="section-label">หมายเหตุ</div>
+    <div class="field"><label>หมายเหตุ</label><input id="pt-note" placeholder="ข้อมูลเพิ่มเติม..."></div>
+    </div>
     <div class="modal-footer">
+      <button class="btn btn-danger modal-delete" id="pt-delete-btn" data-permission="patient.write" onclick="confirmDeletePatient(document.getElementById('pt-id').value)" hidden>ลบรายการ</button>
       <button class="btn btn-ghost"   onclick="closePtModal()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="savePatient()">💾 บันทึกผู้ป่วย</button>
     </div>
@@ -337,31 +494,36 @@
 
 <!-- Serology Modal -->
 <div class="modal-overlay" id="sero-modal">
-  <div class="modal modal-lg">
+  <div class="modal modal-lg entry-modal">
     <div class="modal-header">
       <h4 id="sero-modal-title">บันทึกผล Serology</h4>
       <button class="btn btn-icon btn-ghost" onclick="closeSeroModal()">✕</button>
     </div>
     <input type="hidden" id="sero-id">
+    <div class="modal-body">
+    <div class="modal-context" id="sero-context">
+      <strong>ผลตรวจ Serology</strong>
+      <span>เลือกผู้ป่วยและวันที่เก็บเลือด ระบบจะใช้วันนัดครั้งต่อไปในการแจ้งเตือนครบกำหนด</span>
+    </div>
     <div class="form-grid">
       <div class="field"><label>เลือกผู้ป่วย <span class="required">*</span></label><select id="sero-pt"><option value="">-- เลือกผู้ป่วย --</option></select></div>
       <div class="field"><label>วันที่เก็บเลือด <span class="required">*</span></label><input type="date" id="sero-date"></div>
     </div>
     <div class="section-label">🔬 HBV Panel</div>
-    <div class="form-grid-4" style="margin-bottom:10px">
+    <div class="form-grid-4 mb-10">
       <div class="field"><label>HBsAg</label><select id="sero-hbsag"><option value="">--</option><option>Negative</option><option>Positive</option><option>Reactive</option></select></div>
       <div class="field"><label>Anti-HBs (mIU/mL)</label><input type="number" id="sero-hbs-titer" placeholder="เช่น 120" min="0"></div>
       <div class="field"><label>Anti-HBc</label><select id="sero-hbc"><option value="">--</option><option>Negative</option><option>Positive</option></select></div>
       <div class="field"><label>HBV DNA (IU/mL)</label><input type="number" id="sero-hbv-dna" placeholder="ถ้ามี"></div>
     </div>
     <div class="section-label">🔬 HCV Panel</div>
-    <div class="form-grid-3" style="margin-bottom:10px">
+    <div class="form-grid-3 mb-10">
       <div class="field"><label>Anti-HCV</label><select id="sero-hcv"><option value="">--</option><option>Negative</option><option>Positive</option><option>Reactive</option></select></div>
       <div class="field"><label>HCV RNA (IU/mL)</label><input type="number" id="sero-hcv-rna" placeholder="ถ้ามี"></div>
       <div class="field"><label>HCV Genotype</label><input id="sero-hcv-gt" placeholder="เช่น 1a, 3a"></div>
     </div>
     <div class="section-label">🔬 HIV Panel</div>
-    <div class="form-grid-3" style="margin-bottom:10px">
+    <div class="form-grid-3 mb-10">
       <div class="field"><label>Anti-HIV (Ab/Ag)</label><select id="sero-hiv"><option value="">--</option><option>Negative</option><option>Positive</option><option>Reactive</option></select></div>
       <div class="field"><label>CD4 (cells/µL)</label><input type="number" id="sero-cd4" placeholder="ถ้ามี"></div>
       <div class="field"><label>HIV Viral Load</label><input id="sero-hivvl" placeholder="เช่น Undetectable"></div>
@@ -373,8 +535,10 @@
       <div class="field"><label>ความถี่ติดตาม</label><select id="sero-freq"><option value="">--</option><option>ทุก 1 เดือน</option><option>ทุก 3 เดือน</option><option>ทุก 6 เดือน</option><option>ทุก 1 ปี</option></select></div>
       <div class="field"><label>แนวทาง / Intervention</label><input id="sero-action" placeholder="เช่น แยกเครื่อง, booster"></div>
     </div>
-    <div class="field" style="margin-top:10px"><label>หมายเหตุ</label><textarea id="sero-note" placeholder="บันทึกเพิ่มเติม..."></textarea></div>
+    <div class="field mt-10"><label>หมายเหตุ</label><textarea id="sero-note" placeholder="บันทึกเพิ่มเติม..."></textarea></div>
+    </div>
     <div class="modal-footer">
+      <button class="btn btn-danger modal-delete" id="sero-delete-btn" data-permission="clinical.write" onclick="confirmDeleteSero(document.getElementById('sero-id').value)" hidden>ลบรายการ</button>
       <button class="btn btn-ghost"   onclick="closeSeroModal()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveSerology()">💾 บันทึกผล Serology</button>
     </div>
@@ -383,29 +547,37 @@
 
 <!-- Vascular Access Modal -->
 <div class="modal-overlay" id="acc-modal">
-  <div class="modal modal-lg">
+  <div class="modal modal-lg entry-modal">
     <div class="modal-header">
       <h4 id="acc-modal-title">บันทึก Vascular Access &amp; Exit Site</h4>
       <button class="btn btn-icon btn-ghost" onclick="closeAccessModal()">✕</button>
     </div>
     <input type="hidden" id="acc-id">
+    <div class="modal-body">
+    <div class="modal-context" id="acc-context">
+      <strong>ข้อมูล Access และ Exit Site</strong>
+      <span>บันทึกชนิด access ตำแหน่ง วันที่ใส่/ถอด และสัญญาณติดเชื้อเพื่อใช้ติดตามความเสี่ยง</span>
+    </div>
+    <div class="section-label">ผู้ป่วยและวันที่ประเมิน</div>
     <div class="form-grid">
       <div class="field"><label>เลือกผู้ป่วย <span class="required">*</span></label><select id="acc-pt"><option value="">-- เลือกผู้ป่วย --</option></select></div>
       <div class="field"><label>วันที่ประเมิน <span class="required">*</span></label><input type="date" id="acc-date"></div>
     </div>
-    <div class="form-grid-4" style="margin-top:10px">
+    <div class="section-label">รายละเอียด Access</div>
+    <div class="form-grid-4">
       <div class="field"><label>ประเภท Access</label><select id="acc-type"><option value="">--</option><option>AVF</option><option>AVG</option><option>Tunneled CVC (TDC)</option><option>Non-tunneled CVC</option></select></div>
       <div class="field"><label>ตำแหน่ง</label><select id="acc-site"><option value="">--</option><option>Right IJV</option><option>Left IJV</option><option>Right Subclavian</option><option>Left Subclavian</option><option>Right Femoral</option><option>Left Femoral</option><option>Left Forearm</option><option>Right Forearm</option><option>Left Upper Arm</option><option>Right Upper Arm</option></select></div>
       <div class="field"><label>วันที่ใส่/สร้าง</label><input type="date" id="acc-insert"></div>
       <div class="field"><label>Blood Flow (mL/min)</label><input type="number" id="acc-qb" placeholder="300"></div>
     </div>
-    <div class="form-grid-4" style="margin-top:10px">
+    <div class="section-label">สถานะสาย</div>
+    <div class="form-grid-4">
       <div class="field"><label>วันที่ถอดสาย</label><input type="date" id="acc-remove"></div>
       <div class="field"><label>สถานะสาย</label><select id="acc-status"><option value="">--</option><option value="Active">Active</option><option value="Removed">Removed</option></select></div>
       <div class="field"></div><div class="field"></div>
     </div>
     <div class="section-label">🩹 Exit Site Assessment (CDC Grade)</div>
-    <div class="form-grid" style="margin-bottom:10px">
+    <div class="form-grid mb-10">
       <div class="field"><label>Exit Site Grade</label>
         <select id="acc-grade">
           <option value="">-- เลือก --</option>
@@ -430,8 +602,10 @@
       <div class="field"><label>Dressing ที่ใช้</label><input id="acc-dressing" placeholder="Normal saline + gauze..."></div>
       <div class="field"><label>ผู้ประเมิน</label><input id="acc-staff" placeholder="ชื่อพยาบาล/แพทย์"></div>
     </div>
-    <div class="field" style="margin-top:10px"><label>หมายเหตุ / แผนการดูแล</label><textarea id="acc-note" placeholder="รายละเอียดการดูแล..."></textarea></div>
+    <div class="field mt-10"><label>หมายเหตุ / แผนการดูแล</label><textarea id="acc-note" placeholder="รายละเอียดการดูแล..."></textarea></div>
+    </div>
     <div class="modal-footer">
+      <button class="btn btn-danger modal-delete" id="acc-delete-btn" data-permission="clinical.write" onclick="confirmDeleteAccess(document.getElementById('acc-id').value)" hidden>ลบรายการ</button>
       <button class="btn btn-ghost"   onclick="closeAccessModal()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveAccess()">💾 บันทึก Access</button>
     </div>
@@ -440,12 +614,18 @@
 
 <!-- Infection Modal -->
 <div class="modal-overlay" id="inf-modal">
-  <div class="modal modal-lg">
+  <div class="modal modal-lg entry-modal">
     <div class="modal-header">
       <h4 id="inf-modal-title">บันทึก Infection Event</h4>
       <button class="btn btn-icon btn-ghost" onclick="closeInfModal()">✕</button>
     </div>
     <input type="hidden" id="inf-id">
+    <div class="modal-body">
+    <div class="modal-context" id="inf-context">
+      <strong>รายละเอียดเหตุการณ์ติดเชื้อ</strong>
+      <span>ระบุประเภท infection, organism, blood culture, antibiotic และ outcome ให้ครบเท่าที่มีข้อมูล</span>
+    </div>
+    <div class="section-label">ผู้ป่วยและเหตุการณ์</div>
     <div class="form-grid-3">
       <div class="field"><label>เลือกผู้ป่วย <span class="required">*</span></label><select id="inf-pt"><option value="">-- เลือกผู้ป่วย --</option></select></div>
       <div class="field"><label>วันที่เกิด Infection <span class="required">*</span></label><input type="date" id="inf-date"></div>
@@ -460,19 +640,24 @@
         </select>
       </div>
     </div>
-    <div class="form-grid-4" style="margin-top:10px">
+    <div class="section-label">ผลตรวจและความเกี่ยวข้อง</div>
+    <div class="form-grid-4">
       <div class="field"><label>Organism</label><input id="inf-org" placeholder="S. aureus, MRSA, E. coli..."></div>
       <div class="field"><label>Blood Culture</label><select id="inf-bc"><option value="">--</option><option>Positive</option><option>Negative</option><option>Contamination</option><option>Pending</option></select></div>
       <div class="field"><label>Hospitalization</label><select id="inf-hosp"><option value="">--</option><option>ใช่</option><option>ไม่ใช่</option></select></div>
       <div class="field"><label>Access ที่สัมพันธ์</label><select id="inf-access"><option value="">--</option><option>AVF</option><option>AVG</option><option>Tunneled CVC</option><option>Non-tunneled CVC</option><option>ไม่ทราบ</option></select></div>
     </div>
-    <div class="form-grid-3" style="margin-top:10px">
+    <div class="section-label">การรักษาและผลลัพธ์</div>
+    <div class="form-grid-3">
       <div class="field"><label>Antibiotic ที่ให้</label><input id="inf-abx" placeholder="Vancomycin, Cefazolin..."></div>
       <div class="field"><label>ระยะเวลาการรักษา</label><input id="inf-abx-dur" placeholder="เช่น 14 วัน"></div>
       <div class="field"><label>ผลลัพธ์ (Outcome)</label><select id="inf-outcome"><option value="">--</option><option>หาย / Resolved</option><option>กำลังรักษา</option><option>ถอด Catheter</option><option>เสียชีวิต</option></select></div>
     </div>
-    <div class="field" style="margin-top:10px"><label>Root Cause / แนวทางป้องกัน</label><textarea id="inf-note" placeholder="สาเหตุ, ปัจจัยเสี่ยง, มาตรการป้องกัน..."></textarea></div>
+    <div class="section-label">หมายเหตุและการป้องกัน</div>
+    <div class="field"><label>Root Cause / แนวทางป้องกัน</label><textarea id="inf-note" placeholder="สาเหตุ, ปัจจัยเสี่ยง, มาตรการป้องกัน..."></textarea></div>
+    </div>
     <div class="modal-footer">
+      <button class="btn btn-danger modal-delete" id="inf-delete-btn" data-permission="clinical.write" onclick="confirmDeleteInf(document.getElementById('inf-id').value)" hidden>ลบรายการ</button>
       <button class="btn btn-ghost"   onclick="closeInfModal()">ยกเลิก</button>
       <button class="btn btn-primary" onclick="saveInfection()">💾 บันทึก Infection Event</button>
     </div>
@@ -486,10 +671,31 @@
       <h4>⚠️ ยืนยันการลบ</h4>
       <button class="btn btn-icon btn-ghost" onclick="closeModal()">✕</button>
     </div>
-    <p style="font-size:13px;color:var(--text-muted)">ต้องการลบรายการนี้? ไม่สามารถกู้คืนได้</p>
+    <p class="muted-text">ต้องการลบรายการนี้? ไม่สามารถกู้คืนได้</p>
     <div class="modal-footer">
       <button class="btn btn-ghost"  onclick="closeModal()">ยกเลิก</button>
       <button class="btn btn-danger" id="del-confirm">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Action Modal -->
+<div class="modal-overlay" id="settings-action-modal" role="dialog" aria-modal="true" aria-labelledby="settings-action-title">
+  <div class="modal settings-action-modal">
+    <div class="modal-header">
+      <h4 id="settings-action-title">ยืนยันรายการ</h4>
+      <button class="btn btn-icon btn-ghost" onclick="cancelSettingsActionModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted-text" id="settings-action-message"></p>
+      <div class="field mt-10" id="settings-action-input-wrap" hidden>
+        <label id="settings-action-input-label" for="settings-action-input">ชื่อตัวเลือก</label>
+        <input id="settings-action-input" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cancelSettingsActionModal()">ยกเลิก</button>
+      <button class="btn btn-primary" id="settings-action-confirm" onclick="confirmSettingsActionModal()">ตกลง</button>
     </div>
   </div>
 </div>

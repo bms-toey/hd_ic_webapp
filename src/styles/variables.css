@@ -1,37 +1,50 @@
 /* ===== DESIGN TOKENS ===== */
 :root {
   /* Colors */
-  --teal-50: #E1F5EE; --teal-100: #9FE1CB; --teal-400: #1D9E75;
-  --teal-600: #0F6E56; --teal-800: #085041; --teal-900: #04342C;
-  --amber-50: #FAEEDA; --amber-400: #BA7517; --amber-600: #854F0B; --amber-800: #633806;
-  --red-50: #FCEBEB; --red-400: #E24B4A; --red-600: #A32D2D; --red-800: #791F1F;
-  --blue-50: #E6F1FB; --blue-400: #378ADD; --blue-600: #185FA5;
-  --green-50: #EAF3DE; --green-400: #639922; --green-600: #3B6D11;
-  --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-400: #888780;
-  --gray-600: #5F5E5A; --gray-800: #444441;
+  --navy-900: #071B33; --navy-800: #0B2D52; --navy-700: #123E68;
+  --teal-50: #E6F8F2; --teal-100: #BDECDD; --teal-400: #28B68A;
+  --teal-600: #0F7A60; --teal-800: #085041; --teal-900: #04342C;
+  --amber-50: #FFF6DF; --amber-400: #D89422; --amber-600: #9B640D; --amber-800: #704507;
+  --red-50: #FDECEC; --red-400: #EF6262; --red-600: #B93131; --red-800: #7D1F1F;
+  --blue-50: #EAF4FF; --blue-400: #4A9AEF; --blue-600: #185FA5;
+  --green-50: #EAF7E8; --green-400: #4FA83D; --green-600: #2F7A24;
+  --gray-50: #F4F7FB; --gray-100: #E5EAF1; --gray-400: #8A95A3;
+  --gray-600: #5D6775; --gray-800: #263445;
 
   /* Semantic */
-  --bg: #F7F6F2;
+  --bg: #F3F7FB;
   --surface: #FFFFFF;
-  --surface2: #F1EFE8;
-  --text: #1A1916;
-  --text-muted: #5F5E5A;
-  --text-hint: #B4B2A9;
-  --border: rgba(68, 68, 65, 0.12);
-  --border-md: rgba(68, 68, 65, 0.22);
+  --surface2: #F8FBFD;
+  --text: #102033;
+  --text-muted: #5D6775;
+  --text-hint: #98A4B3;
+  --border: rgba(16, 32, 51, 0.10);
+  --border-md: rgba(16, 32, 51, 0.18);
+  --primary-gradient: linear-gradient(135deg, var(--navy-900) 0%, var(--blue-600) 52%, var(--teal-600) 100%);
 
   /* Shape */
-  --radius: 8px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 
   /* Shadow */
-  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
-  --shadow-md: 0 2px 8px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  --shadow: 0 1px 2px rgba(16,32,51,.04), 0 10px 28px rgba(16,32,51,.06);
+  --shadow-md: 0 12px 36px rgba(16,32,51,.12);
 
   /* Layout dimensions */
-  --sidebar-w: 220px;
-  --topbar-h: 56px;
-  --bnav-h: 60px;
+  --sidebar-w: clamp(220px, 18vw, 280px);
+  --topbar-h: 52px;
+  --bnav-h: 72px;
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+
+  /* Responsive density */
+  --control-h: 44px;
+  --control-py: 8px;
+  --control-px: 12px;
+  --card-pad: clamp(14px, 1.2vw, 18px);
+  --section-gap: 14px;
+  --text-sm: 11px;
+  --text-md: 13px;
+  --text-lg: 15px;
 }

@@ -1,20 +1,19 @@
 import { DB } from '../services/db.service.js';
-import { uid, v, set, emptyHtml, fillSelect } from '../utils/dom.util.js';
-import { thDate, todayStr } from '../utils/date.util.js';
+import { uid, v, set, emptyHtml, fillSelect, h, hd, jsArg } from '../utils/dom.util.js';
+import { diffDays, thDate, todayStr } from '../utils/date.util.js';
 import { showToast } from '../components/toast.component.js';
 import { openModal, closeModal, confirmDelete } from '../components/modal.component.js';
 
-const GRADE_MAP = { '0':'badge-neg', '1':'badge-pend', '2':'badge-pend', '3':'badge-pos' };
-const SIGNS_IDS = ['acc-pain','acc-swelling','acc-discharge','acc-fever','acc-tunnel'];
-const SIGN_LABELS = ['ปวด','บวม','Discharge','ไข้','Tunnel'];
-
-// ── Modal ─────────────────────────────────────────────────────────────────
+const SIGNS_IDS = ['acc-pain', 'acc-swelling', 'acc-discharge', 'acc-fever', 'acc-tunnel'];
+const SIGN_LABELS = ['ปวด', 'บวม', 'Discharge', 'ไข้', 'Tunnel'];
 
 export function openAccessModal() {
   clearAccessForm();
   fillSelect('acc-pt', DB.getPatients());
   set('acc-date', todayStr());
   document.getElementById('acc-modal-title').textContent = 'บันทึก Vascular Access & Exit Site';
+  setContext('Access และ Exit Site ใหม่', 'บันทึกชนิด access ตำแหน่ง วันที่ใส่/ถอด และสัญญาณติดเชื้อเพื่อใช้ติดตามความเสี่ยง');
+  setDeleteVisible(false);
   openModal('acc-modal');
 }
 
@@ -23,12 +22,13 @@ export function closeAccessModal() {
   clearAccessForm();
 }
 
-// ── CRUD ──────────────────────────────────────────────────────────────────
-
 export function saveAccess() {
   const ptId = v('acc-pt');
   const date = v('acc-date');
-  if (!ptId || !date) { showToast('กรุณาเลือกผู้ป่วยและวันที่', 'error'); return; }
+  if (!ptId || !date) {
+    showToast('กรุณาเลือกผู้ป่วยและวันที่', 'error');
+    return;
+  }
 
   const signs = SIGNS_IDS
     .map((id, i) => document.getElementById(id)?.checked ? SIGN_LABELS[i] : null)
@@ -36,15 +36,25 @@ export function saveAccess() {
 
   const eid = v('acc-id');
   const record = {
-    id: eid || uid(), ptId, date,
-    type: v('acc-type'), site: v('acc-site'), insertDate: v('acc-insert'), qb: v('acc-qb'),
-    removeDate: v('acc-remove'), accessStatus: v('acc-status'),
-    grade: v('acc-grade'), signs, culture: v('acc-culture'),
-    dressing: v('acc-dressing'), staff: v('acc-staff'), note: v('acc-note'),
+    id: eid || uid(),
+    ptId,
+    date,
+    type: v('acc-type'),
+    site: v('acc-site'),
+    insertDate: v('acc-insert'),
+    qb: v('acc-qb'),
+    removeDate: v('acc-remove'),
+    accessStatus: v('acc-status'),
+    grade: v('acc-grade'),
+    signs,
+    culture: v('acc-culture'),
+    dressing: v('acc-dressing'),
+    staff: v('acc-staff'),
+    note: v('acc-note'),
   };
 
   if (eid) DB.updateAccess(eid, record);
-  else     DB.addAccess(record);
+  else DB.addAccess(record);
 
   renderAccessTable();
   closeAccessModal();
@@ -74,18 +84,21 @@ export function editAccess(id) {
     if (el) el.checked = (a.signs || []).includes(SIGN_LABELS[i]);
   });
   document.getElementById('acc-modal-title').textContent = 'แก้ไข Vascular Access & Exit Site';
+  const p = DB.getPatients().find(x => x.id === a.ptId) || { hn: '?', name: '?' };
+  setContext(`${p.hn} - ${p.name}`, `${a.type || 'Access'} | ${a.site || 'ไม่ระบุตำแหน่ง'} | ประเมิน ${thDate(a.date)}`);
+  setDeleteVisible(true);
   openModal('acc-modal');
 }
 
-// ── Table ─────────────────────────────────────────────────────────────────
-
 export function renderAccessTable() {
-  const q   = (v('acc-search') || '').toLowerCase();
+  const q = (v('acc-search') || '').toLowerCase();
   const flt = v('acc-filter') || '';
   const patients = DB.getPatients();
 
-  let rows = DB.getAccess()
-    .map(a => ({ ...a, hn: patients.find(x => x.id === a.ptId)?.hn || '?', pname: patients.find(x => x.id === a.ptId)?.name || '?' }));
+  let rows = DB.getAccess().map(a => {
+    const p = patients.find(x => x.id === a.ptId) || { hn: '?', name: '?' };
+    return { ...a, hn: p.hn, pname: p.name };
+  });
 
   rows = rows.filter(r => {
     if (q && !(r.hn + r.pname).toLowerCase().includes(q)) return false;
@@ -98,33 +111,117 @@ export function renderAccessTable() {
     return;
   }
 
-  const trs = rows.map(r => `<tr>
-    <td data-label="HN" class="td-hn">${r.hn}</td>
-    <td data-label="ชื่อ">${r.pname}</td>
-    <td data-label="วันที่" class="td-muted">${thDate(r.date)}</td>
-    <td data-label="ประเภท" class="td-muted" style="font-size:11px">${r.type || '-'}</td>
-    <td data-label="ตำแหน่ง" class="td-muted" style="font-size:11px">${r.site || '-'}</td>
-    <td data-label="ใส่/สร้าง" class="td-muted" style="font-size:11px">${thDate(r.insertDate)}</td>
-    <td data-label="ถอด" class="td-muted" style="font-size:11px">${thDate(r.removeDate)}</td>
-    <td data-label="สถานะ" style="font-size:11px">${r.accessStatus ? `<span class="badge ${r.accessStatus === 'Active' ? 'badge-ok' : 'badge-pend'}">${r.accessStatus}</span>` : '-'}</td>
-    <td data-label="Exit">${r.grade !== '' && r.grade !== undefined ? `<span class="badge ${GRADE_MAP[r.grade] || 'badge-gray'}">G${r.grade}</span>` : '-'}</td>
-    <td data-label="สัญญาณ">${r.signs?.length ? `<span class="badge badge-pos" style="font-size:10px">${r.signs.join(', ')}</span>` : '<span class="badge badge-neg">ปกติ</span>'}</td>
-    <td data-label="Culture" class="td-muted" style="font-size:11px">${r.culture || '-'}</td>
-    <td data-label=""><button class="btn btn-outline btn-sm" onclick="editAccess('${r.id}')">แก้ไข</button> <button class="btn btn-danger btn-sm" onclick="confirmDeleteAccess('${r.id}')">ลบ</button></td>
-  </tr>`).join('');
-
-  document.getElementById('acc-table').innerHTML =
-    `<table><thead><tr><th>HN</th><th>ชื่อ</th><th>วันที่</th><th>ประเภท</th><th>ตำแหน่ง</th><th>ใส่</th><th>ถอด</th><th>สถานะ</th><th>Exit Grade</th><th>สัญญาณ</th><th>Culture</th><th>จัดการ</th></tr></thead><tbody>${trs}</tbody></table>`;
+  document.getElementById('acc-table').innerHTML = `<div class="record-card-list">
+    ${rows.map(renderAccessCard).join('')}
+  </div>`;
 }
 
-// ── Internal ──────────────────────────────────────────────────────────────
+function renderAccessCard(r) {
+  const state = riskState(r);
+  const signs = Array.isArray(r.signs) ? r.signs : [];
+  const age = r.insertDate ? `${diffDays(r.insertDate, todayStr())} Days` : '-';
+
+  return `<article class="record-card is-${state} clickable-row" tabindex="0"
+      role="button" aria-label="Open access ${h(r.hn || '')}"
+      onclick="editAccess(${jsArg(r.id)})" onkeydown="if(event.key==='Enter') editAccess(${jsArg(r.id)})">
+    <div class="record-card-top">
+      <div class="record-icon" aria-hidden="true">A</div>
+      <div class="record-title">
+        <strong>${h(r.pname || '-')}</strong>
+        <span>${h(r.hn || '-')} | Assessment ${thDate(r.date)} | ${hd(r.type)}</span>
+      </div>
+      <div class="record-meta">
+        ${gradeBadge(r.grade)}
+        ${r.accessStatus ? `<span class="badge ${r.accessStatus === 'Active' ? 'badge-ok' : 'badge-pend'}">${h(r.accessStatus)}</span>` : ''}
+      </div>
+    </div>
+    <div class="record-card-bottom">
+      <section class="record-info-block access-${accessTypeKey(r.type)}">
+        <span class="record-label">Vascular Access</span>
+        <strong>${hd(r.type)}</strong>
+        <small>${hd(r.site)}</small>
+        <small>Inserted: ${thDate(r.insertDate)}</small>
+        <small>Age: ${h(age)}</small>
+      </section>
+      <section class="record-info-block">
+        <span class="record-label">Exit Site</span>
+        <strong>${gradeBadge(r.grade)}</strong>
+        <small>Removed: ${thDate(r.removeDate)}</small>
+      </section>
+      <section class="record-info-block">
+        <span class="record-label">Culture</span>
+        ${cultureBadge(r.culture)}
+        <small>Dressing: ${hd(r.dressing)}</small>
+      </section>
+      <section class="record-info-block">
+        <span class="record-label">Infection Signs</span>
+        <div class="sign-pill-row">${signs.length ? signs.map(s => `<span class="sign-pill sign-danger">${h(s)}</span>`).join('') : '<span class="sign-pill sign-ok">No Symptom</span>'}</div>
+      </section>
+      <section class="record-info-block">
+        <span class="record-label">Assessment / Notes</span>
+        <strong>${hd(r.staff)}</strong>
+        <small>QB: ${hd(r.qb)}</small>
+        <small class="record-note">${hd(r.note)}</small>
+      </section>
+    </div>
+  </article>`;
+}
+
+function riskState(r) {
+  const grade = Number(r.grade || 0);
+  const culture = String(r.culture || '').toUpperCase();
+  const signs = Array.isArray(r.signs) ? r.signs.length : 0;
+  if (grade >= 3 || /MRSA|ESBL|CRE/.test(culture)) return 'danger';
+  if (grade >= 2 || /MSSA/.test(culture) || signs >= 2) return 'warning';
+  if (grade === 1 || signs === 1) return 'info';
+  return 'ok';
+}
+
+function accessTypeKey(type = '') {
+  const value = type.toLowerCase();
+  if (value.includes('avf')) return 'avf';
+  if (value.includes('avg')) return 'avg';
+  if (value.includes('perm')) return 'perm';
+  if (value.includes('cvc') || value.includes('tdc')) return 'tdc';
+  return 'default';
+}
+
+function gradeBadge(grade) {
+  if (grade === '' || grade === undefined || grade === null) return '<span class="exit-grade exit-grade-empty">-</span>';
+  return `<span class="exit-grade exit-grade-g${h(grade)}">G${h(grade)}</span>`;
+}
+
+function cultureBadge(value) {
+  if (!value) return '<span class="culture-badge culture-ok">No Growth</span>';
+  const upper = String(value).toUpperCase();
+  const cls = /MRSA|ESBL|CRE/.test(upper) ? 'culture-danger'
+    : /MSSA|PSEUDOMONAS|KLEBSIELLA|E\. COLI|AUREUS/.test(upper) ? 'culture-warn'
+    : /NO\s*GROWTH|NEGATIVE/.test(upper) ? 'culture-ok'
+    : 'culture-info';
+  return `<span class="culture-badge ${cls}">${h(value)}</span>`;
+}
 
 function clearAccessForm() {
-  ['acc-id','acc-pt','acc-date','acc-type','acc-site','acc-insert','acc-qb',
-   'acc-remove','acc-status','acc-grade','acc-culture','acc-dressing','acc-staff','acc-note'].forEach(id => set(id, ''));
+  ['acc-id', 'acc-pt', 'acc-date', 'acc-type', 'acc-site', 'acc-insert', 'acc-qb',
+   'acc-remove', 'acc-status', 'acc-grade', 'acc-culture', 'acc-dressing', 'acc-staff', 'acc-note'].forEach(id => set(id, ''));
   SIGNS_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
+  setDeleteVisible(false);
+}
+
+function setDeleteVisible(show) {
+  const btn = document.getElementById('acc-delete-btn');
+  if (btn) btn.hidden = !show;
+}
+
+function setContext(title, detail) {
+  const el = document.getElementById('acc-context');
+  if (!el) return;
+  el.innerHTML = `<strong>${h(title)}</strong><span>${h(detail)}</span>`;
 }
 
 export function confirmDeleteAccess(id) {
-  confirmDelete('access', id, () => renderAccessTable());
+  confirmDelete('access', id, () => {
+    closeAccessModal();
+    renderAccessTable();
+  });
 }

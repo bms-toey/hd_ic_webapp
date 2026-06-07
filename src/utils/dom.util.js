@@ -11,9 +11,28 @@ export function set(id, val) {
   if (el) el.value = val;
 }
 
+/** Escape user-provided values before inserting into HTML strings. */
+export const h = (val) =>
+  String(val ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[ch]));
+
+/** Escape a value, returning a dash when it is blank. */
+export const hd = (val) => {
+  const text = String(val ?? '').trim();
+  return text ? h(text) : '-';
+};
+
+/** Encode a value for use as an inline JavaScript string argument. */
+export const jsArg = (val) => h(JSON.stringify(String(val ?? '')));
+
 /** Empty-state HTML fragment. */
 export const emptyHtml = (msg) =>
-  `<div class="empty-state"><div class="empty-icon">📭</div><p>${msg}</p></div>`;
+  `<div class="empty-state"><div class="empty-icon">📭</div><p>${h(msg)}</p></div>`;
 
 /**
  * Populate a <select> with Active patients.
@@ -39,6 +58,6 @@ export function fillSelect(id, patients) {
 export function seroBadge(val) {
   if (!val) return '-';
   if (val === 'Negative') return '<span class="badge badge-neg">Neg</span>';
-  if (val === 'Positive' || val === 'Reactive') return `<span class="badge badge-pos">${val}</span>`;
-  return val;
+  if (val === 'Positive' || val === 'Reactive') return `<span class="badge badge-pos">${h(val)}</span>`;
+  return h(val);
 }
