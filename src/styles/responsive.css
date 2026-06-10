@@ -503,4 +503,30 @@
 @media (min-width: 1440px) {
   .content { max-width: 1480px; }
   .stat-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .dash-stat-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
+
+/* ── Topbar search ── */
+@media (max-width: 768px) {
+  .topbar-search { display: none; }
+  .topbar-notif { width: 40px; height: 40px; }
+  .dash-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dash-stat-card { padding: 13px 12px 11px; }
+  .dash-stat-num { font-size: 22px; }
+  .dash-stat-icon { width: 34px; height: 34px; margin-bottom: 8px; }
+  .vascular-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .vascular-tile { min-height: 70px; padding: 10px 8px; }
+  .att-toolbar { grid-template-columns: 1fr 1fr; }
+  .dlc-summary-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .dash-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .vascular-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .att-toolbar { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  .topbar-search { flex: 0 1 200px; }
+  .dash-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }

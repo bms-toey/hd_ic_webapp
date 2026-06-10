@@ -1,6 +1,17 @@
 import { StorageService } from './storage.service.js';
 
-let _db = { patients: [], serology: [], access: [], infections: [] };
+let _db = {
+  patients: [],
+  serology: [],
+  access: [],
+  infections: [],
+  appointments: [],
+  attendance: [],
+  dialysisSessions: [],
+  resources: [],
+  stockItems: [],
+  stockMoves: [],
+};
 
 const persist = () => StorageService.save(_db);
 
@@ -48,4 +59,69 @@ export const DB = {
     persist();
   },
   deleteInfection(id)    { _db.infections = _db.infections.filter(x => x.id !== id); persist(); },
+
+  // Daily HD appointments
+  getAppointments()          { return _db.appointments || []; },
+  addAppointment(row)        { _db.appointments = this.getAppointments(); _db.appointments.push(row); persist(); },
+  updateAppointment(id, row) {
+    _db.appointments = this.getAppointments();
+    const i = _db.appointments.findIndex(x => x.id === id);
+    if (i > -1) _db.appointments[i] = row; else _db.appointments.push(row);
+    persist();
+  },
+  deleteAppointment(id)      { _db.appointments = this.getAppointments().filter(x => x.id !== id); persist(); },
+
+  // Daily attendance
+  getAttendance()            { return _db.attendance || []; },
+  addAttendance(row)         { _db.attendance = this.getAttendance(); _db.attendance.push(row); persist(); },
+  updateAttendance(id, row)  {
+    _db.attendance = this.getAttendance();
+    const i = _db.attendance.findIndex(x => x.id === id);
+    if (i > -1) _db.attendance[i] = row; else _db.attendance.push(row);
+    persist();
+  },
+  deleteAttendance(id)       { _db.attendance = this.getAttendance().filter(x => x.id !== id); persist(); },
+
+  // Dialysis treatment session summary
+  getDialysisSessions()      { return _db.dialysisSessions || []; },
+  addDialysisSession(row)    { _db.dialysisSessions = this.getDialysisSessions(); _db.dialysisSessions.push(row); persist(); },
+  updateDialysisSession(id, row) {
+    _db.dialysisSessions = this.getDialysisSessions();
+    const i = _db.dialysisSessions.findIndex(x => x.id === id);
+    if (i > -1) _db.dialysisSessions[i] = row; else _db.dialysisSessions.push(row);
+    persist();
+  },
+  deleteDialysisSession(id)  { _db.dialysisSessions = this.getDialysisSessions().filter(x => x.id !== id); persist(); },
+
+  // Beds and dialysis machines
+  getResources()             { return _db.resources || []; },
+  addResource(row)           { _db.resources = this.getResources(); _db.resources.push(row); persist(); },
+  updateResource(id, row)    {
+    _db.resources = this.getResources();
+    const i = _db.resources.findIndex(x => x.id === id);
+    if (i > -1) _db.resources[i] = row; else _db.resources.push(row);
+    persist();
+  },
+  deleteResource(id)         { _db.resources = this.getResources().filter(x => x.id !== id); persist(); },
+
+  // Medical supply stock
+  getStockItems()            { return _db.stockItems || []; },
+  addStockItem(row)          { _db.stockItems = this.getStockItems(); _db.stockItems.push(row); persist(); },
+  updateStockItem(id, row)   {
+    _db.stockItems = this.getStockItems();
+    const i = _db.stockItems.findIndex(x => x.id === id);
+    if (i > -1) _db.stockItems[i] = row; else _db.stockItems.push(row);
+    persist();
+  },
+  deleteStockItem(id)        { _db.stockItems = this.getStockItems().filter(x => x.id !== id); persist(); },
+
+  getStockMoves()            { return _db.stockMoves || []; },
+  addStockMove(row)          { _db.stockMoves = this.getStockMoves(); _db.stockMoves.push(row); persist(); },
+  updateStockMove(id, row)   {
+    _db.stockMoves = this.getStockMoves();
+    const i = _db.stockMoves.findIndex(x => x.id === id);
+    if (i > -1) _db.stockMoves[i] = row; else _db.stockMoves.push(row);
+    persist();
+  },
+  deleteStockMove(id)        { _db.stockMoves = this.getStockMoves().filter(x => x.id !== id); persist(); },
 };

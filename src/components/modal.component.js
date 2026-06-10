@@ -37,6 +37,12 @@ export function confirmDelete(type, id, onDeleted) {
     if (t === 'serology')   DB.deleteSerology(did);
     if (t === 'access')     DB.deleteAccess(did);
     if (t === 'infections') DB.deleteInfection(did);
+    if (t === 'appointments') DB.deleteAppointment(did);
+    if (t === 'attendance')   DB.deleteAttendance(did);
+    if (t === 'sessions')     DB.deleteDialysisSession(did);
+    if (t === 'resources')    DB.deleteResource(did);
+    if (t === 'stockItems')   DB.deleteStockItem(did);
+    if (t === 'stockMoves')   DB.deleteStockMove(did);
 
     closeModal('del-modal');
     showToast('ลบรายการแล้ว', 'ok');

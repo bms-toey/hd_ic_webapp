@@ -1,7 +1,29 @@
 import { CONFIG } from '../config/app.config.js';
 
-const EMPTY_DB = () => ({ patients: [], serology: [], access: [], infections: [] });
-const DB_KEYS = ['patients', 'serology', 'access', 'infections'];
+const EMPTY_DB = () => ({
+  patients: [],
+  serology: [],
+  access: [],
+  infections: [],
+  appointments: [],
+  attendance: [],
+  dialysisSessions: [],
+  resources: [],
+  stockItems: [],
+  stockMoves: [],
+});
+const DB_KEYS = [
+  'patients',
+  'serology',
+  'access',
+  'infections',
+  'appointments',
+  'attendance',
+  'dialysisSessions',
+  'resources',
+  'stockItems',
+  'stockMoves',
+];
 
 function normalizeDB(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return EMPTY_DB();

@@ -8,6 +8,8 @@ const ROLE_PERMISSIONS = {
   editor: [
     'patient.write',
     'clinical.write',
+    'operations.write',
+    'stock.write',
     'report.run',
     'data.export',
     'data.import',

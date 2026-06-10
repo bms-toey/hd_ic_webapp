@@ -39,6 +39,16 @@ import {
 } from './modules/infection.module.js';
 import { renderSurveillance } from './modules/surveillance.module.js';
 import {
+  renderDailyDashboard, renderSchedulePage, renderAttendancePage, renderResourcePage,
+  renderStockPage, renderDlcAlertPage,
+  setCalView, calPrev, calNext, calToday, calSelectDate,
+  openAppointmentModal, editAppointment, closeAppointmentModal, saveAppointment, confirmDeleteAppointment,
+  openAttendanceModal, closeAttendanceModal, saveAttendance, exportAttendancePDF,
+  openResourceModal, editResource, closeResourceModal, saveResource,
+  openStockItemModal, editStockItem, closeStockItemModal, saveStockItem,
+  openStockMoveModal, closeStockMoveModal, saveStockMove,
+} from './modules/dialysis.module.js';
+import {
   generateReport, exportJSON, exportCSV, importJSON, clearAll,
   initMonthlyReport, renderMonthlyReport,
 } from './modules/report.module.js';
@@ -52,19 +62,64 @@ function updateBadges() {
   const due = DB.getSerology().filter(s => s.nextDue && s.nextDue <= todayStr()).length;
 
   const badgeEl  = document.getElementById('badge-due');
-  const alertTxt = document.getElementById('topbar-alert-txt');
   const alertBtn = document.getElementById('topbar-alerts');
+  const notifDot = document.getElementById('notif-dot');
   const bnBadge  = document.getElementById('bn-sero-badge');
 
   if (badgeEl)  { badgeEl.textContent = due; badgeEl.style.display = due > 0 ? 'inline' : 'none'; }
   if (bnBadge)  { bnBadge.textContent = due; bnBadge.style.display = due > 0 ? '' : 'none'; }
 
   const total = due + DB.getInfections().filter(x => x.date?.slice(0, 7) === todayStr().slice(0, 7)).length;
-  if (alertTxt) alertTxt.textContent = total > 0 ? `${total} รายการ` : 'ระบบปกติ';
+  if (notifDot) notifDot.style.display = total > 0 ? 'block' : 'none';
   if (alertBtn) {
-    alertBtn.style.background = total > 0 ? 'var(--red-50)'  : 'var(--teal-50)';
-    alertBtn.style.color      = total > 0 ? 'var(--red-600)' : 'var(--teal-600)';
+    alertBtn.title = total > 0 ? `แจ้งเตือน ${total} รายการ` : 'ไม่มีการแจ้งเตือน';
   }
+}
+
+// ── Topbar Search ─────────────────────────────────────────────────────────
+
+function onTopbarSearch(q = '') {
+  const results = document.getElementById('topbar-search-results');
+  if (!results) return;
+  const trimQ = q.trim().toLowerCase();
+  if (!trimQ) { results.style.display = 'none'; return; }
+  const patients = DB.getPatients().filter(p =>
+    p.status === 'Active' &&
+    (`${p.hn || ''} ${p.name || ''}`).toLowerCase().includes(trimQ)
+  ).slice(0, 8);
+  if (!patients.length) { results.style.display = 'none'; return; }
+  results.style.display = 'block';
+  results.innerHTML = patients.map(p => `
+    <div class="search-result-item" onmousedown="goToPatient(${h(JSON.stringify(p.id))})">
+      <span class="search-result-hn">${h(p.hn || '-')}</span>
+      <span class="search-result-name">${h(p.name || '-')}</span>
+      <span class="search-result-meta">${h(p.vascularType || '')} ${p.dryWeight ? `· ${p.dryWeight} kg` : ''}</span>
+    </div>`).join('');
+}
+
+function hideTopbarResults() {
+  setTimeout(() => {
+    const results = document.getElementById('topbar-search-results');
+    if (results) results.style.display = 'none';
+  }, 180);
+}
+
+function goToPatient(id) {
+  const input = document.getElementById('topbar-search-input');
+  if (input) input.value = '';
+  const results = document.getElementById('topbar-search-results');
+  if (results) results.style.display = 'none';
+  showSection('patient', document.querySelector('[data-nav-section=patient]'));
+  setTimeout(() => {
+    const p = DB.getPatients().find(x => x.id === id);
+    if (p) {
+      const searchEl = document.getElementById('pt-search');
+      if (searchEl) {
+        searchEl.value = p.hn || p.name || '';
+        searchEl.dispatchEvent(new Event('input'));
+      }
+    }
+  }, 120);
 }
 
 ptSetBadges(updateBadges);
@@ -74,25 +129,35 @@ infSetBadges(updateBadges);
 // ── Router ────────────────────────────────────────────────────────────────
 
 const SECTION_TITLES = {
-  dashboard:    'ภาพรวม (Dashboard)',
+  dashboard:    'หน้าแรก',
+  schedule:     'ตารางนัดฟอกเลือด',
+  attendance:   'เช็คชื่อผู้ป่วย',
+  resources:    'เตียง / เครื่องไตเทียม',
+  stock:        'สต็อกการใช้เวชภัณฑ์',
+  'dlc-alert':  'แจ้งเตือน DLC เกินกำหนด',
   patient:      'ทะเบียนผู้ป่วย',
-  serology:     'Serology HBV/HCV/HIV',
+  serology:     'ผลตรวจ Serology',
   access:       'Vascular Access',
   infection:    'Infection Events',
   surveillance: 'Surveillance',
-  report:       'รายงาน / Export',
-  settings:     'ตั้งค่า',
+  report:       'รายงานประจำวัน',
+  settings:     'ตั้งค่าระบบผู้ใช้งาน',
 };
 
 const SECTION_DESCRIPTIONS = {
-  dashboard: 'สรุป KPI, alert และสถานะการเฝ้าระวัง Infection Control',
-  patient: 'จัดการทะเบียนผู้ป่วย HD และข้อมูลสถานะล่าสุด',
+  dashboard: 'สรุปสถานะผู้ป่วย ตารางนัด เครื่องมือ และการเฝ้าระวัง IC ประจำวัน',
+  schedule: 'จัดตารางนัดฟอกเลือดรายวัน แยกรอบ เตียง และเครื่องไตเทียม',
+  attendance: 'เช็คชื่อผู้ป่วย บันทึกน้ำหนัก ความดัน และข้อมูลการฟอกแต่ละครั้ง',
+  resources: 'ทะเบียนเตียง เครื่องไตเทียม และสถานะพร้อมใช้งาน',
+  stock: 'รับเข้า เบิกใช้ และแจ้งเตือนสต็อกเวชภัณฑ์ขั้นต่ำ',
+  'dlc-alert': 'ติดตามผู้ป่วยที่มี DLC / PC / TLC ตามระยะวันที่ใช้งาน',
+  patient: 'จัดการทะเบียนผู้ป่วย HD ประวัติ Vascular Access และสถานะล่าสุด',
   serology: 'ติดตามผล HBV / HCV / HIV และกำหนดตรวจครั้งถัดไป',
-  access: 'บันทึก Vascular Access, Exit Site และประวัติสาย',
-  infection: 'จัดการ Infection Events และผลลัพธ์การรักษา',
-  surveillance: 'วิเคราะห์อัตราการติดเชื้อและสัญญาณ outbreak',
-  report: 'สร้างรายงาน สรุปรายเดือน ส่งออกข้อมูล และจัดการข้อมูลระบบ',
-  settings: 'จัดการตัวเลือกทั้งหมดและ User Login ของระบบ',
+  access: 'บันทึก Vascular Access, Exit Site Grade และประวัติสาย',
+  infection: 'จัดการ Infection Events CRBSI และผลลัพธ์การรักษา',
+  surveillance: 'วิเคราะห์อัตราการติดเชื้อ สถิติ และสัญญาณ outbreak',
+  report: 'สรุปรายงานประจำวัน สรุปรายเดือน ส่งออกข้อมูล CSV/JSON',
+  settings: 'จัดการ User Login สิทธิ์ผู้ใช้งาน และตัวเลือกทั้งหมดในระบบ',
 };
 
 const BN_INDEX = { dashboard:0, patient:1, serology:2, infection:3, surveillance:4 };
@@ -117,12 +182,17 @@ function showSection(id, el) {
   const desc = document.getElementById('topbar-desc');
   if (desc) desc.textContent = SECTION_DESCRIPTIONS[id] || 'Secure data management workspace';
   const breadcrumb = document.getElementById('topbar-breadcrumb');
-  if (breadcrumb) breadcrumb.textContent = `HD-IC / ${SECTION_TITLES[id] || id}`;
+  if (breadcrumb) breadcrumb.textContent = `HD Dialysis / ${SECTION_TITLES[id] || id}`;
 
   if (BN_INDEX[id] !== undefined) syncBn(BN_INDEX[id]);
 
   switch (id) {
-    case 'dashboard':     renderDashboard(); break;
+    case 'dashboard':     renderDashboard(); renderDailyDashboard(); break;
+    case 'schedule':      renderSchedulePage(); break;
+    case 'attendance':    renderAttendancePage(); break;
+    case 'resources':     renderResourcePage(); break;
+    case 'stock':         renderStockPage(); break;
+    case 'dlc-alert':     renderDlcAlertPage(); break;
     case 'patient':       renderPatientTable(); break;
     case 'serology':      fillSelect('sero-pt', DB.getPatients()); renderSeroTable(); break;
     case 'access':        fillSelect('acc-pt',  DB.getPatients()); renderAccessTable(); break;
@@ -140,7 +210,12 @@ function refreshActiveSection({ silent = false } = {}) {
   if (!AuthService.currentUser()) return;
   const active = document.querySelector('.section.active')?.id || 'dashboard';
   switch (active) {
-    case 'dashboard':     renderDashboard(); break;
+    case 'dashboard':     renderDashboard(); renderDailyDashboard(); break;
+    case 'schedule':      renderSchedulePage(); break;
+    case 'attendance':    renderAttendancePage(); break;
+    case 'resources':     renderResourcePage(); break;
+    case 'stock':         renderStockPage(); break;
+    case 'dlc-alert':     renderDlcAlertPage(); break;
     case 'patient':       renderPatientTable(); break;
     case 'serology':      fillSelect('sero-pt', DB.getPatients()); renderSeroTable(); break;
     case 'access':        fillSelect('acc-pt', DB.getPatients()); renderAccessTable(); break;
@@ -612,6 +687,7 @@ async function login() {
     set('login-password', '');
     renderAuthPanel();
     renderDashboard();
+    renderDailyDashboard();
     updateBadges();
     showToast(`เข้าสู่ระบบ: ${user.username}`, 'ok');
   } finally {
@@ -781,6 +857,8 @@ Object.assign(window, {
     if (type === 'serology')  renderSeroTable();
     if (type === 'access')    renderAccessTable();
     if (type === 'infection') renderInfTable();
+    if (type === 'schedule')  renderSchedulePage();
+    if (type === 'attendance') renderAttendancePage();
     applyPermissions();
   },
 
@@ -816,6 +894,45 @@ Object.assign(window, {
 
   // Surveillance
   renderSurveillance,
+
+  // Topbar search
+  onTopbarSearch,
+  hideTopbarResults,
+  goToPatient,
+
+  // Daily HD operations
+  renderDailyDashboard,
+  renderSchedulePage,
+  renderAttendancePage,
+  renderResourcePage,
+  renderStockPage,
+  renderDlcAlertPage,
+  // Calendar navigation
+  setCalView,
+  calPrev,
+  calNext,
+  calToday,
+  calSelectDate,
+  exportAttendancePDF: requirePermission('operations.write', exportAttendancePDF),
+  openAppointmentModal: requirePermission('operations.write', openAppointmentModal),
+  editAppointment: requirePermission('operations.write', editAppointment),
+  closeAppointmentModal,
+  saveAppointment: requirePermission('operations.write', saveAppointment),
+  confirmDeleteAppointment: requirePermission('operations.write', confirmDeleteAppointment),
+  openAttendanceModal: requirePermission('operations.write', openAttendanceModal),
+  closeAttendanceModal,
+  saveAttendance: requirePermission('operations.write', saveAttendance),
+  openResourceModal: requirePermission('operations.write', openResourceModal),
+  editResource: requirePermission('operations.write', editResource),
+  closeResourceModal,
+  saveResource: requirePermission('operations.write', saveResource),
+  openStockItemModal: requirePermission('stock.write', openStockItemModal),
+  editStockItem: requirePermission('stock.write', editStockItem),
+  closeStockItemModal,
+  saveStockItem: requirePermission('stock.write', saveStockItem),
+  openStockMoveModal: requirePermission('stock.write', openStockMoveModal),
+  closeStockMoveModal,
+  saveStockMove: requirePermission('stock.write', saveStockMove),
 
   // Modal
   closeModal: closeDeleteModal,
@@ -859,5 +976,6 @@ applySettingsOptions();
 renderAuthPanel();
 if (AuthService.currentUser()) {
   renderDashboard();
+  renderDailyDashboard();
   updateBadges();
 }

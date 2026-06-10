@@ -36,6 +36,10 @@ export function savePatient() {
     cause: v('pt-cause'),
     shift: v('pt-shift'),
     machine: v('pt-machine'),
+    coverage: v('pt-coverage'),
+    dryWeight: v('pt-dry-weight'),
+    vascularType: v('pt-vascular'),
+    phone: v('pt-phone'),
     status: v('pt-status') || 'Active',
     note: v('pt-note'),
     created: todayStr(),
@@ -63,6 +67,10 @@ export function editPatient(id) {
   set('pt-cause', p.cause || '');
   set('pt-shift', p.shift || '');
   set('pt-machine', p.machine || '');
+  set('pt-coverage', p.coverage || '');
+  set('pt-dry-weight', p.dryWeight || '');
+  set('pt-vascular', p.vascularType || '');
+  set('pt-phone', p.phone || '');
   set('pt-status', p.status || 'Active');
   set('pt-note', p.note || '');
 
@@ -118,6 +126,9 @@ function renderClinicalPatientCard(p, allAccess, allInfections) {
       </div>
       <div class="patient-meta">
         <span class="badge ${statusClass}">${h(p.status || 'Active')}</span>
+        <span>${hd(p.coverage) || 'Coverage -'}</span>
+        <span>${p.dryWeight ? `${h(p.dryWeight)} kg` : 'DW -'}</span>
+        <span>${hd(p.vascularType) || 'Vascular -'}</span>
         <span>${hd(p.machine) || 'Machine -'}</span>
         <span>${hd(p.shift) || 'Shift -'}</span>
       </div>
@@ -221,7 +232,7 @@ function cultureBadge(value) {
 }
 
 function clearPatientForm() {
-  ['pt-id', 'pt-hn', 'pt-name', 'pt-dob', 'pt-sex', 'pt-start', 'pt-cause', 'pt-shift', 'pt-machine', 'pt-note'].forEach(id => set(id, ''));
+  ['pt-id', 'pt-hn', 'pt-name', 'pt-dob', 'pt-sex', 'pt-start', 'pt-cause', 'pt-shift', 'pt-machine', 'pt-coverage', 'pt-dry-weight', 'pt-vascular', 'pt-phone', 'pt-note'].forEach(id => set(id, ''));
   set('pt-status', 'Active');
   setDeleteVisible(false);
 }
