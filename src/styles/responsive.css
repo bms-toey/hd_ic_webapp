@@ -1,107 +1,533 @@
 /* ===== RESPONSIVE BREAKPOINTS ===== */
-
-/* Tablet & Mobile ≤ 768px */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
+  .more-drawer { display: block; }
+  :root {
+    --control-h: 44px;
+    --control-py: 8px;
+    --control-px: 12px;
+    --card-pad: 14px;
+    --section-gap: 12px;
+  }
+
+  body.sidebar-collapsed { --sidebar-w: clamp(220px, 18vw, 280px); }
+  .sidebar {
+    transform: translateX(-100%);
+    max-width: min(88vw, 340px);
+  }
   .sidebar.open { transform: translateX(0); }
-  .main { margin-left: 0; }
+  .sidebar-collapse { display: none; }
+  .main {
+    margin-left: 0;
+    width: 100%;
+  }
   .hamburger { display: inline-flex; }
-  .topbar { padding: 0 12px; }
-  .topbar-date { display: none; }
+
+  .topbar {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    gap: 8px;
+    min-height: calc(66px + var(--safe-t));
+  }
+  .breadcrumb,
+  .topbar p,
+  .topbar-date,
+  .primary-action {
+    display: none;
+  }
+  .topbar h2 { font-size: 15px; }
+  .topbar-alerts,
+  .topbar-action {
+    padding: 6px 9px;
+    min-width: 44px;
+    max-width: 110px;
+    justify-content: center;
+  }
+  .topbar-action span + span,
+  .topbar-alerts.auth-chip .badge,
+  .topbar-alerts.auth-chip span + span {
+    display: none;
+  }
+
   .content {
     padding: 14px;
     padding-bottom: calc(var(--bnav-h) + var(--safe-b) + 16px) !important;
   }
   .bottom-nav { display: block; }
 
-  /* 2-column → 1-column */
+  .auth-login {
+    padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+    align-items: center;
+  }
+  .login-shell {
+    grid-template-columns: 1fr;
+    width: min(460px, calc(100vw - 32px));
+    min-height: auto;
+    max-height: none;
+    border-radius: 28px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .login-hero { display: none; }
+  .login-card {
+    border-radius: 24px;
+    padding: 28px 22px;
+    max-height: none;
+    overflow-y: visible;
+    box-shadow: 0 24px 70px rgba(2, 12, 27, .28);
+  }
+  .login-brand-mark {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    margin-bottom: 18px;
+  }
+  .login-card-heading { margin-bottom: 20px; }
+  .login-input-wrap input,
+  .login-submit { min-height: 50px; }
+
   .grid-2col { grid-template-columns: 1fr !important; }
-
-  /* Modal: bottom sheet */
-  .modal { border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+  .settings-tabs {
+    grid-template-columns: 1fr;
+  }
+  .settings-card {
+    padding: 16px;
+  }
+  .settings-card-head,
+  .settings-toolbar,
+  .settings-user-form,
+  .settings-option-row,
+  .settings-user-row {
+    grid-template-columns: 1fr;
+  }
+  .settings-card-head {
+    display: grid;
+  }
+  .settings-card-head .auth-summary {
+    width: 100%;
+    border-radius: 16px;
+  }
+  .settings-row-actions {
+    justify-content: flex-start;
+  }
+  .settings-row-usage {
+    width: 100%;
+    text-align: left;
+  }
+  .modal {
+    border-radius: 24px 24px 0 0;
+    max-height: calc(100dvh - var(--safe-t));
+  }
   .modal-footer { flex-direction: column-reverse; }
-  .modal-footer .btn { width: 100%; justify-content: center; }
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .modal-header,
+  .entry-modal .modal-header {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .modal-body {
+    padding: 12px 14px 16px;
+  }
+  .entry-modal .modal-footer {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .modal-delete {
+    margin-right: 0;
+    margin-top: 6px;
+  }
 
-  /* Buttons: full width in groups */
   .btn-group { flex-direction: column; }
-  .btn-group .btn { width: 100%; justify-content: center; }
+  .btn-group .btn {
+    width: 100%;
+    justify-content: center;
+  }
 
-  /* Forms: 1 column */
-  .form-grid, .form-grid-3, .form-grid-4 { grid-template-columns: 1fr; }
-  .form-row { flex-direction: column; }
+  .card-title-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
 
-  /* Stats: 2 columns */
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .card-title-row .btn {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .form-grid,
+  .form-grid-3,
+  .form-grid-4,
+  .form-row,
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-card { min-height: 104px; }
+
+  .page-header-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .page-header-row > .btn { width: 100%; }
+
+  tbody tr {
+    grid-template-columns: minmax(180px, .8fr) repeat(2, minmax(120px, 1fr));
+  }
+
+  .clinical-card-top {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .patient-meta {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .clinical-card-bottom {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .record-card-top {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .record-meta {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .record-card-bottom {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-/* Small mobile ≤ 480px */
 @media (max-width: 480px) {
-  .stat-grid { gap: 8px; }
-  .stat-card .num { font-size: 20px; }
+  .stat-grid { gap: 10px; }
+  .stat-card {
+    padding: 14px;
+    min-height: 98px;
+  }
+  .stat-card .num { font-size: 22px; }
+  .stat-card::before {
+    width: 36px;
+    height: 36px;
+    border-radius: 13px;
+    margin-bottom: 10px;
+  }
   .content {
     padding: 12px;
     padding-bottom: calc(var(--bnav-h) + var(--safe-b) + 12px) !important;
   }
-  .topbar-alerts { padding: 6px 8px; font-size: 10px; }
+  .topbar-alerts,
+  .topbar-action {
+    padding: 6px;
+    font-size: 12px;
+    max-width: 48px;
+  }
+  .topbar-alerts span:not(:first-child),
+  .topbar-action span:not(:first-child) {
+    display: none;
+  }
+  .auth-chip {
+    max-width: 44px;
+    padding: 5px;
+  }
+  .auth-chip > span:not(.avatar) { display: none; }
+  .logout-chip > span:first-child { display: inline; }
+  .btn {
+    width: 100%;
+    white-space: normal;
+  }
+  .clinical-patient-list {
+    gap: 10px;
+  }
+
+  .clinical-card-top {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .risk-badge {
+    justify-self: start;
+    min-width: 104px;
+  }
+
+  .patient-avatar {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .patient-main {
+    padding-right: 54px;
+  }
+
+  .patient-main strong {
+    font-size: 17px;
+  }
+
+  .patient-meta {
+    gap: 6px;
+  }
+
+  .patient-meta > span:not(.badge),
+  .patient-meta .badge {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .clinical-card-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-info-block {
+    min-height: auto;
+    padding: 12px 14px;
+  }
+
+  .record-card-list {
+    gap: 10px;
+  }
+
+  .record-card-top {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .record-icon {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .record-title {
+    padding-right: 52px;
+  }
+
+  .record-meta {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .record-card-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .record-info-block {
+    min-height: auto;
+    padding: 12px 14px;
+  }
+
+  .timeline-note {
+    -webkit-line-clamp: 3;
+  }
+  .modal-header,
+  .entry-modal .modal-header,
+  .modal-body,
+  .entry-modal .modal-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .auth-login {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .login-shell { width: min(460px, calc(100vw - 24px)); }
+  .login-card { padding: 24px 18px; }
+  .login-card-heading h4 { font-size: 24px; }
+  .login-card-heading p,
+  .login-help { font-size: 13px; }
 }
 
-/* Desktop: center modal ≥ 769px */
+@media (max-width: 360px) {
+  .content {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .stat-grid { grid-template-columns: 1fr; }
+  .bn-label { font-size: 10px; }
+  .bn-icon { font-size: 18px; }
+  .topbar h2 { font-size: 13px; }
+}
+
 @media (min-width: 769px) {
   .modal-overlay { align-items: center; }
+  .modal-overlay.auth-login { align-items: center; }
   .modal {
     border-radius: var(--radius-xl);
-    max-width: 620px;
+    max-width: 580px;
     width: 90%;
-    padding: 24px;
     max-height: 90vh;
     animation: modalIn .2s ease;
   }
-  .modal-lg { max-width: 720px; }
+  .modal-lg { max-width: 680px; }
+  .entry-modal.modal-lg { max-width: min(760px, calc(100vw - 32px)); }
+  .auth-login .modal {
+    width: auto;
+    max-width: none;
+    padding: 0;
+    max-height: none;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
+    animation: none;
+  }
 
   @keyframes modalIn {
     from { transform: scale(.96); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
+    to { transform: scale(1); opacity: 1; }
   }
 }
 
-/* Table → Card list on mobile ≤ 640px */
 @media (max-width: 640px) {
-  .table-wrap { border: none; background: transparent; overflow-x: visible; border-radius: 0; }
-  .table-wrap table { display: block; min-width: unset; width: 100%; }
-  .table-wrap thead { display: none; }
-  .table-wrap tbody { display: flex; flex-direction: column; gap: 10px; }
-  .table-wrap tbody tr {
+  .table-wrap {
+    border: none;
+    background: transparent;
+    overflow-x: visible;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .table-wrap table {
     display: block;
+    min-width: 0;
+    width: 100%;
+    table-layout: auto;
+  }
+  .table-wrap thead { display: none; }
+  .table-wrap tbody {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .table-wrap tbody tr {
+    display: grid;
+    grid-template-columns: 1fr;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border-radius: 18px;
     padding: 12px;
     box-shadow: var(--shadow);
   }
-  .table-wrap tbody tr:hover { background: var(--teal-50); }
+  .table-wrap tbody tr:hover { background: var(--blue-50); }
   .table-wrap td {
-    display: flex;
+    display: grid;
     align-items: flex-start;
-    gap: 8px;
-    padding: 4px 0;
-    border: none;
-    font-size: 13px;
+    gap: 3px;
+    padding: 8px 9px;
+    border: 1px solid rgba(16,32,51,.06);
+    font-size: 12.5px;
     min-height: unset;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
   .table-wrap td::before {
     content: attr(data-label);
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 800;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .4px;
-    min-width: 74px;
+    min-width: 78px;
     flex-shrink: 0;
     padding-top: 2px;
     line-height: 1.4;
   }
-  .table-wrap td[data-label=""] { justify-content: flex-start; padding-top: 10px; gap: 6px; flex-wrap: wrap; }
+
+  .table-wrap td:first-child,
+  .table-wrap td:nth-child(2) {
+    grid-column: auto;
+  }
+  .table-wrap td[data-label=""] {
+    justify-content: flex-start;
+    padding-top: 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
   .table-wrap td[data-label=""]::before { display: none; }
   .td-hn { white-space: normal; }
   .btn-sm { min-height: 36px; }
+  .table-wrap td[data-label=""] .btn {
+    flex: 1 1 120px;
+    min-width: 0;
+    width: auto;
+    margin-bottom: 0;
+  }
+
+  .clinical-card-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .record-card-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  .stat-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .content { padding: 18px; }
+  .topbar-alerts { max-width: 180px; }
+  .topbar-date { display: none; }
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-option-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .settings-row-usage {
+    display: none;
+  }
+  .clinical-card-bottom {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .record-card-bottom {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1440px) {
+  .content { max-width: 1480px; }
+  .stat-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .dash-stat-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
+
+/* ── Topbar search ── */
+@media (max-width: 768px) {
+  .topbar-search { display: none; }
+  .topbar-notif { width: 40px; height: 40px; }
+  .dash-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dash-stat-card { padding: 13px 12px 11px; }
+  .dash-stat-num { font-size: 22px; }
+  .dash-stat-icon { width: 34px; height: 34px; margin-bottom: 8px; }
+  .vascular-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .vascular-tile { min-height: 70px; padding: 10px 8px; }
+  .att-toolbar { grid-template-columns: 1fr 1fr; }
+  .dlc-summary-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .dash-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .vascular-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .att-toolbar { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  .topbar-search { flex: 0 1 200px; }
+  .dash-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }

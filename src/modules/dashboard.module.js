@@ -1,7 +1,7 @@
 import { DB } from '../services/db.service.js';
 import { CONFIG } from '../config/app.config.js';
 import { todayStr, thDate, diffDays } from '../utils/date.util.js';
-import { emptyHtml } from '../utils/dom.util.js';
+import { emptyHtml, h } from '../utils/dom.util.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -64,7 +64,7 @@ function _renderDueList(due, patients, today) {
     const d = diffDays(today, s.nextDue);
     const cls = d <= 0 ? 'badge-pos' : 'badge-pend';
     const txt = d <= 0 ? `เกินกำหนด ${Math.abs(d)} วัน` : `ครบใน ${d} วัน`;
-    return `<div class="due-item"><span class="hn">${p.hn}</span><span style="flex:1">${p.name}</span><span class="badge ${cls}">${txt}</span></div>`;
+    return `<div class="due-item"><span class="hn">${h(p.hn)}</span><span class="flex-fill">${h(p.name)}</span><span class="badge ${cls}">${h(txt)}</span></div>`;
   }).join('');
   document.getElementById('dash-due').innerHTML = html || emptyHtml('ไม่มีรายการที่ครบกำหนด');
 }
@@ -73,10 +73,10 @@ function _renderRecentEvents(infections, patients) {
   const html = [...infections].slice(-5).reverse().map(x => {
     const p = patients.find(pt => pt.id === x.ptId) || { hn: '?', name: '?' };
     return `<div class="due-item">
-      <span class="hn">${p.hn}</span>
-      <span style="flex:1">${p.name}</span>
-      <span class="badge badge-pos" style="font-size:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis">${x.type || 'Infection'}</span>
-      <span style="font-size:10px;color:var(--text-hint);margin-left:4px">${thDate(x.date)}</span>
+      <span class="hn">${h(p.hn)}</span>
+      <span class="flex-fill">${h(p.name)}</span>
+      <span class="badge badge-pos">${h(x.type || 'Infection')}</span>
+      <span class="td-muted">${thDate(x.date)}</span>
     </div>`;
   }).join('');
   document.getElementById('dash-events').innerHTML = html || emptyHtml('ยังไม่มี Infection Event');
@@ -89,9 +89,9 @@ function _renderSeroSummary(latestSero) {
   const vaccOk = latestSero.filter(s => s.vacc?.includes('complete')).length;
 
   const box = (n, label, bg, color) => `
-    <div style="text-align:center;padding:12px;background:${bg};border-radius:var(--radius)">
-      <div style="font-size:22px;font-weight:600;color:${color};font-family:'IBM Plex Mono',monospace">${n}</div>
-      <div style="font-size:11px;color:var(--text-muted)">${label}</div>
+    <div class="summary-tile" style="background:${bg}">
+      <div class="summary-tile-num" style="color:${color}">${n}</div>
+      <div class="summary-tile-label">${label}</div>
     </div>`;
 
   document.getElementById('dash-sero-summary').innerHTML = `

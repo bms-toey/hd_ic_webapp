@@ -1,12 +1,40 @@
 import { CONFIG } from '../config/app.config.js';
 
-const EMPTY_DB = () => ({ patients: [], serology: [], access: [], infections: [] });
+const EMPTY_DB = () => ({
+  patients: [],
+  serology: [],
+  access: [],
+  infections: [],
+  appointments: [],
+  attendance: [],
+  dialysisSessions: [],
+  resources: [],
+  stockItems: [],
+  stockMoves: [],
+});
+const DB_KEYS = [
+  'patients',
+  'serology',
+  'access',
+  'infections',
+  'appointments',
+  'attendance',
+  'dialysisSessions',
+  'resources',
+  'stockItems',
+  'stockMoves',
+];
+
+function normalizeDB(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return EMPTY_DB();
+  return Object.fromEntries(DB_KEYS.map(key => [key, Array.isArray(data[key]) ? data[key] : []]));
+}
 
 export const StorageService = {
   load() {
     try {
       const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
-      return raw ? JSON.parse(raw) : EMPTY_DB();
+      return raw ? normalizeDB(JSON.parse(raw)) : EMPTY_DB();
     } catch {
       return EMPTY_DB();
     }
@@ -15,6 +43,7 @@ export const StorageService = {
   save(db) {
     try {
       localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(db));
+      window.dispatchEvent(new CustomEvent('hdic:datachange'));
     } catch {
       alert('ไม่สามารถบันทึกได้ กรุณาตรวจสอบ Local Storage');
     }

@@ -1,6 +1,7 @@
 import { DB } from '../services/db.service.js';
 import { CONFIG } from '../config/app.config.js';
 import { todayStr } from '../utils/date.util.js';
+import { h } from '../utils/dom.util.js';
 import { getLatestSero } from './dashboard.module.js';
 
 export function renderSurveillance() {
@@ -38,9 +39,9 @@ function _renderMonthlyBars(infections) {
         const pct = Math.round((n / maxVal) * 100);
         const cls = n >= 3 ? 'danger' : n >= 2 ? 'warn' : '';
         const tag = n >= 3 ? '<span class="badge badge-pos">⚠️ Outbreak</span>' : n >= 2 ? '<span class="badge badge-pend">ติดตาม</span>' : '<span class="badge badge-neg">ปกติ</span>';
-        return `<div class="surv-bar-row"><span style="min-width:60px;font-family:'IBM Plex Mono',monospace;font-size:11px">${k}</span><div class="surv-bar"><div class="surv-bar-fill ${cls}" style="width:${pct}%"></div></div><span style="min-width:20px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500">${n}</span>${tag}</div>`;
+        return `<div class="surv-bar-row"><span class="surv-label">${k}</span><div class="surv-bar"><div class="surv-bar-fill ${cls}" style="width:${pct}%"></div></div><span class="surv-value">${n}</span>${tag}</div>`;
       }).join('')
-    : '<div style="font-size:12px;color:var(--text-hint);padding:12px 0">ยังไม่มีข้อมูล</div>';
+    : '<div class="empty-inline">ยังไม่มีข้อมูล</div>';
 
   document.getElementById('surv-monthly').innerHTML = html;
 }
@@ -53,14 +54,14 @@ function _renderSeroCoverage({ latestSero, active, today }) {
 
   const bar = (n, t, cls) => {
     const pct = t ? Math.round((n / t) * 100) : 0;
-    return `<div class="surv-bar-row"><span style="flex:1;font-size:12px">${n} / ${t}</span><div class="surv-bar" style="width:120px"><div class="surv-bar-fill ${cls}" style="width:${pct}%"></div></div><span style="min-width:36px;text-align:right;font-size:11px;font-family:'IBM Plex Mono',monospace">${pct}%</span></div>`;
+    return `<div class="surv-bar-row"><span class="surv-text">${n} / ${t}</span><div class="surv-bar surv-bar-fixed"><div class="surv-bar-fill ${cls}" style="width:${pct}%"></div></div><span class="surv-value">${pct}%</span></div>`;
   };
 
   document.getElementById('surv-sero').innerHTML = `
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">ผู้ป่วยที่มีประวัติ Serology</div>${bar(total, active, '')}
-    <div style="font-size:11px;color:var(--text-muted);margin:8px 0 4px">Vaccinated HBV (complete)</div>${bar(vaccOk, total, '')}
-    <div style="font-size:11px;color:var(--text-muted);margin:8px 0 4px">Anti-HBs ≥ 10 mIU/mL</div>${bar(tiOk, total, '')}
-    <div style="font-size:11px;color:var(--text-muted);margin:8px 0 4px">ครบกำหนดตรวจ (Overdue)</div>${bar(due, total, 'warn')}
+    <div class="surv-caption">ผู้ป่วยที่มีประวัติ Serology</div>${bar(total, active, '')}
+    <div class="surv-caption">Vaccinated HBV (complete)</div>${bar(vaccOk, total, '')}
+    <div class="surv-caption">Anti-HBs ≥ 10 mIU/mL</div>${bar(tiOk, total, '')}
+    <div class="surv-caption">ครบกำหนดตรวจ (Overdue)</div>${bar(due, total, 'warn')}
   `;
 }
 
@@ -78,6 +79,6 @@ function _renderOrganismChart(infections) {
   const max = arr.length ? arr[0][1] : 1;
 
   document.getElementById('surv-organism').innerHTML = arr.length
-    ? arr.map(([k, n]) => `<div class="surv-bar-row"><span style="min-width:120px;font-size:12px">${k}</span><div class="surv-bar"><div class="surv-bar-fill" style="width:${Math.round((n/max)*100)}%"></div></div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;min-width:24px;text-align:right">${n}</span></div>`).join('')
-    : '<div style="font-size:12px;color:var(--text-hint)">ยังไม่มีข้อมูล</div>';
+    ? arr.map(([k, n]) => `<div class="surv-bar-row"><span class="surv-label wide">${h(k)}</span><div class="surv-bar"><div class="surv-bar-fill" style="width:${Math.round((n/max)*100)}%"></div></div><span class="surv-value">${n}</span></div>`).join('')
+    : '<div class="empty-inline">ยังไม่มีข้อมูล</div>';
 }

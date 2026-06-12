@@ -6,14 +6,17 @@ html, body {
   max-width: 100%;
   overflow-x: hidden;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: 'IBM Plex Sans Thai', sans-serif;
-  background: var(--bg);
+  font-family: 'Prompt', 'Noto Sans Thai', 'IBM Plex Sans Thai', sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(74,154,239,.12), transparent 28rem),
+    linear-gradient(180deg, #F8FBFE 0%, var(--bg) 42%);
   color: var(--text);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.5;
   min-height: 100vh;
   min-height: 100dvh;
 }
@@ -22,11 +25,49 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 a { color: inherit; text-decoration: none; }
 
 button, input, select, textarea {
-  font-family: 'IBM Plex Sans Thai', sans-serif;
-  font-size: 14px;
-  min-height: 44px;
+  font-family: 'Prompt', 'Noto Sans Thai', 'IBM Plex Sans Thai', sans-serif;
+  font-size: 13px;
+  min-height: var(--control-h);
   touch-action: manipulation;
 }
 
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
-input, select, textarea { min-height: 44px; }
+input, select, textarea { min-height: var(--control-h); }
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(40, 182, 138, .22);
+  outline-offset: 2px;
+}
+
+p, h1, h2, h3, h4, h5, h6,
+span, label, div, td, th, button {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.text-wrap {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.card, .panel, .section,
+.modal, .table-wrap, .content,
+.form-grid, .form-grid-3, .form-grid-4,
+.search-row, .btn-group {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.card, .panel, .section {
+  height: auto;
+  overflow: visible;
+}
+
+[hidden] { display: none !important; }

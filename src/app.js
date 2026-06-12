@@ -9,8 +9,11 @@
  */
 
 import { DB } from './services/db.service.js';
+import { AuthService } from './services/auth.service.js';
+import { SettingsService } from './services/settings.service.js';
+import { CONFIG } from './config/app.config.js';
 import { todayStr } from './utils/date.util.js';
-import { fillSelect } from './utils/dom.util.js';
+import { emptyHtml, fillSelect, h, jsArg, v, set } from './utils/dom.util.js';
 import { showToast } from './components/toast.component.js';
 import { closeDeleteModal } from './components/modal.component.js';
 
@@ -36,30 +39,90 @@ import {
 } from './modules/infection.module.js';
 import { renderSurveillance } from './modules/surveillance.module.js';
 import {
+  renderDailyDashboard, renderSchedulePage, renderAttendancePage, renderResourcePage,
+  renderStockPage, renderDlcAlertPage, getCatheterAlerts,
+  setCalView, calPrev, calNext, calToday, calSelectDate,
+  openAppointmentModal, editAppointment, closeAppointmentModal, saveAppointment, confirmDeleteAppointment,
+  openAttendanceModal, closeAttendanceModal, saveAttendance, exportAttendancePDF,
+  openResourceModal, editResource, closeResourceModal, saveResource,
+  openStockItemModal, editStockItem, closeStockItemModal, saveStockItem,
+  openStockMoveModal, closeStockMoveModal, saveStockMove,
+} from './modules/dialysis.module.js';
+import {
   generateReport, exportJSON, exportCSV, importJSON, clearAll,
   initMonthlyReport, renderMonthlyReport,
 } from './modules/report.module.js';
 import { DEMO_DB } from './data/demo.data.js';
 
+const LOGIN_REMEMBER_KEY = `${CONFIG.STORAGE_KEY}_remembered_username`;
+
 // ── Inject updateBadges into modules that need it ─────────────────────────
 
 function updateBadges() {
-  const due = DB.getSerology().filter(s => s.nextDue && s.nextDue <= todayStr()).length;
+  const due        = DB.getSerology().filter(s => s.nextDue && s.nextDue <= todayStr()).length;
+  const dlcOverdue = getCatheterAlerts().filter(r => r.dlcStatus === 'overdue').length;
 
-  const badgeEl  = document.getElementById('badge-due');
-  const alertTxt = document.getElementById('topbar-alert-txt');
-  const alertBtn = document.getElementById('topbar-alerts');
-  const bnBadge  = document.getElementById('bn-sero-badge');
+  const badgeEl    = document.getElementById('badge-due');
+  const alertBtn   = document.getElementById('topbar-alerts');
+  const notifDot   = document.getElementById('notif-dot');
+  const bnBadge    = document.getElementById('bn-sero-badge');
+  const bnDlcBadge = document.getElementById('bn-dlc-badge');
 
-  if (badgeEl)  { badgeEl.textContent = due; badgeEl.style.display = due > 0 ? 'inline' : 'none'; }
-  if (bnBadge)  { bnBadge.textContent = due; bnBadge.style.display = due > 0 ? '' : 'none'; }
+  if (badgeEl)    { badgeEl.textContent = due;        badgeEl.style.display    = due        > 0 ? 'inline' : 'none'; }
+  if (bnBadge)    { bnBadge.textContent = due;        bnBadge.style.display    = due        > 0 ? ''       : 'none'; }
+  if (bnDlcBadge) { bnDlcBadge.textContent = dlcOverdue; bnDlcBadge.style.display = dlcOverdue > 0 ? '' : 'none'; }
 
-  const total = due + DB.getInfections().filter(x => x.date?.slice(0, 7) === todayStr().slice(0, 7)).length;
-  if (alertTxt) alertTxt.textContent = total > 0 ? `${total} รายการ` : 'ระบบปกติ';
+  const total = due + dlcOverdue + DB.getInfections().filter(x => x.date?.slice(0, 7) === todayStr().slice(0, 7)).length;
+  if (notifDot) notifDot.style.display = total > 0 ? 'block' : 'none';
   if (alertBtn) {
-    alertBtn.style.background = total > 0 ? 'var(--red-50)'  : 'var(--teal-50)';
-    alertBtn.style.color      = total > 0 ? 'var(--red-600)' : 'var(--teal-600)';
+    alertBtn.title = total > 0 ? `แจ้งเตือน ${total} รายการ` : 'ไม่มีการแจ้งเตือน';
   }
+}
+
+// ── Topbar Search ─────────────────────────────────────────────────────────
+
+function onTopbarSearch(q = '') {
+  const results = document.getElementById('topbar-search-results');
+  if (!results) return;
+  const trimQ = q.trim().toLowerCase();
+  if (!trimQ) { results.style.display = 'none'; return; }
+  const patients = DB.getPatients().filter(p =>
+    p.status === 'Active' &&
+    (`${p.hn || ''} ${p.name || ''}`).toLowerCase().includes(trimQ)
+  ).slice(0, 8);
+  if (!patients.length) { results.style.display = 'none'; return; }
+  results.style.display = 'block';
+  results.innerHTML = patients.map(p => `
+    <div class="search-result-item" onmousedown="goToPatient(${h(JSON.stringify(p.id))})">
+      <span class="search-result-hn">${h(p.hn || '-')}</span>
+      <span class="search-result-name">${h(p.name || '-')}</span>
+      <span class="search-result-meta">${h(p.vascularType || '')} ${p.dryWeight ? `· ${p.dryWeight} kg` : ''}</span>
+    </div>`).join('');
+}
+
+function hideTopbarResults() {
+  setTimeout(() => {
+    const results = document.getElementById('topbar-search-results');
+    if (results) results.style.display = 'none';
+  }, 180);
+}
+
+function goToPatient(id) {
+  const input = document.getElementById('topbar-search-input');
+  if (input) input.value = '';
+  const results = document.getElementById('topbar-search-results');
+  if (results) results.style.display = 'none';
+  showSection('patient', document.querySelector('[data-nav-section=patient]'));
+  setTimeout(() => {
+    const p = DB.getPatients().find(x => x.id === id);
+    if (p) {
+      const searchEl = document.getElementById('pt-search');
+      if (searchEl) {
+        searchEl.value = p.hn || p.name || '';
+        searchEl.dispatchEvent(new Event('input'));
+      }
+    }
+  }, 120);
 }
 
 ptSetBadges(updateBadges);
@@ -69,23 +132,49 @@ infSetBadges(updateBadges);
 // ── Router ────────────────────────────────────────────────────────────────
 
 const SECTION_TITLES = {
-  dashboard:    'ภาพรวม (Dashboard)',
+  dashboard:    'หน้าแรก',
+  schedule:     'ตารางนัดฟอกเลือด',
+  attendance:   'เช็คชื่อผู้ป่วย',
+  resources:    'เตียง / เครื่องไตเทียม',
+  stock:        'สต็อกการใช้เวชภัณฑ์',
+  'dlc-alert':  'แจ้งเตือน DLC เกินกำหนด',
   patient:      'ทะเบียนผู้ป่วย',
-  serology:     'Serology HBV/HCV/HIV',
+  serology:     'ผลตรวจ Serology',
   access:       'Vascular Access',
   infection:    'Infection Events',
   surveillance: 'Surveillance',
-  monthlyreport:'สรุปข้อมูลรายเดือน',
-  report:       'รายงาน / Export',
+  report:       'รายงานประจำวัน',
+  settings:     'ตั้งค่าระบบผู้ใช้งาน',
 };
 
-const BN_INDEX = { dashboard:0, patient:1, serology:2, infection:3, surveillance:4 };
+const SECTION_DESCRIPTIONS = {
+  dashboard: 'สรุปสถานะผู้ป่วย ตารางนัด เครื่องมือ และการเฝ้าระวัง IC ประจำวัน',
+  schedule: 'จัดตารางนัดฟอกเลือดรายวัน แยกรอบ เตียง และเครื่องไตเทียม',
+  attendance: 'เช็คชื่อผู้ป่วย บันทึกน้ำหนัก ความดัน และข้อมูลการฟอกแต่ละครั้ง',
+  resources: 'ทะเบียนเตียง เครื่องไตเทียม และสถานะพร้อมใช้งาน',
+  stock: 'รับเข้า เบิกใช้ และแจ้งเตือนสต็อกเวชภัณฑ์ขั้นต่ำ',
+  'dlc-alert': 'ติดตามผู้ป่วยที่มี DLC / PC / TLC ตามระยะวันที่ใช้งาน',
+  patient: 'จัดการทะเบียนผู้ป่วย HD ประวัติ Vascular Access และสถานะล่าสุด',
+  serology: 'ติดตามผล HBV / HCV / HIV และกำหนดตรวจครั้งถัดไป',
+  access: 'บันทึก Vascular Access, Exit Site Grade และประวัติสาย',
+  infection: 'จัดการ Infection Events CRBSI และผลลัพธ์การรักษา',
+  surveillance: 'วิเคราะห์อัตราการติดเชื้อ สถิติ และสัญญาณ outbreak',
+  report: 'สรุปรายงานประจำวัน สรุปรายเดือน ส่งออกข้อมูล CSV/JSON',
+  settings: 'จัดการ User Login สิทธิ์ผู้ใช้งาน และตัวเลือกทั้งหมดในระบบ',
+};
+
+const BN_INDEX = { dashboard:0, schedule:1, attendance:2, 'dlc-alert':3 };
 
 function syncBn(idx) {
   document.querySelectorAll('.bn-item').forEach((b, i) => b.classList.toggle('active', i === idx));
 }
 
 function showSection(id, el) {
+  if (!AuthService.currentUser()) {
+    openLogin();
+    return;
+  }
+
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
@@ -93,20 +182,91 @@ function showSection(id, el) {
 
   const title = document.getElementById('topbar-title');
   if (title) title.textContent = SECTION_TITLES[id] || id;
+  const desc = document.getElementById('topbar-desc');
+  if (desc) desc.textContent = SECTION_DESCRIPTIONS[id] || 'Secure data management workspace';
+  const breadcrumb = document.getElementById('topbar-breadcrumb');
+  if (breadcrumb) breadcrumb.textContent = `HD Dialysis / ${SECTION_TITLES[id] || id}`;
 
-  if (BN_INDEX[id] !== undefined) syncBn(BN_INDEX[id]);
+  syncBn(BN_INDEX[id] ?? 4);
 
   switch (id) {
-    case 'dashboard':     renderDashboard(); break;
+    case 'dashboard':     renderDashboard(); renderDailyDashboard(); break;
+    case 'schedule':      renderSchedulePage(); break;
+    case 'attendance':    renderAttendancePage(); break;
+    case 'resources':     renderResourcePage(); break;
+    case 'stock':         renderStockPage(); break;
+    case 'dlc-alert':     renderDlcAlertPage(); break;
     case 'patient':       renderPatientTable(); break;
     case 'serology':      fillSelect('sero-pt', DB.getPatients()); renderSeroTable(); break;
     case 'access':        fillSelect('acc-pt',  DB.getPatients()); renderAccessTable(); break;
     case 'infection':     fillSelect('inf-pt',  DB.getPatients()); renderInfTable(); break;
     case 'surveillance':  renderSurveillance(); break;
-    case 'monthlyreport': initMonthlyReport(); break;
+    case 'report':        initMonthlyReport('report-monthly'); break;
+    case 'settings':      renderSettingsPage(); break;
   }
 
-  if (window.innerWidth <= 768) closeSidebar();
+  applyPermissions();
+  if (window.innerWidth <= 768) { closeSidebar(); closeMoreDrawer(); }
+}
+
+function refreshActiveSection({ silent = false } = {}) {
+  if (!AuthService.currentUser()) return;
+  const active = document.querySelector('.section.active')?.id || 'dashboard';
+  switch (active) {
+    case 'dashboard':     renderDashboard(); renderDailyDashboard(); break;
+    case 'schedule':      renderSchedulePage(); break;
+    case 'attendance':    renderAttendancePage(); break;
+    case 'resources':     renderResourcePage(); break;
+    case 'stock':         renderStockPage(); break;
+    case 'dlc-alert':     renderDlcAlertPage(); break;
+    case 'patient':       renderPatientTable(); break;
+    case 'serology':      fillSelect('sero-pt', DB.getPatients()); renderSeroTable(); break;
+    case 'access':        fillSelect('acc-pt', DB.getPatients()); renderAccessTable(); break;
+    case 'infection':     fillSelect('inf-pt', DB.getPatients()); renderInfTable(); break;
+    case 'surveillance':  renderSurveillance(); break;
+    case 'report': {
+      const activeReport = document.querySelector('.settings-tab.active[data-report-tab]')?.dataset.reportTab || 'range';
+      if (activeReport === 'monthly') renderMonthlyReport('report-monthly');
+      else generateReport();
+      break;
+    }
+    case 'settings':      renderSettingsPage(); break;
+  }
+  updateBadges();
+  applyPermissions();
+  if (!silent) showToast('ข้อมูลอัปเดตอัตโนมัติแล้ว', 'ok');
+}
+
+function showReportPanel(panel = 'range') {
+  const target = panel === 'monthly' ? 'monthly' : 'range';
+  document.querySelectorAll('[data-report-tab]').forEach(tab => {
+    const isActive = tab.dataset.reportTab === target;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+  document.querySelectorAll('[data-report-panel]').forEach(el => {
+    el.hidden = el.dataset.reportPanel !== target;
+  });
+  if (target === 'monthly') initMonthlyReport('report-monthly');
+}
+
+// ── More Drawer (mobile) ─────────────────────────────────────────────────
+
+function toggleMoreDrawer() {
+  const drawer  = document.getElementById('more-drawer');
+  const overlay = document.getElementById('more-drawer-overlay');
+  const btn     = document.getElementById('bn-more-btn');
+  if (!drawer) return;
+  const isOpen = drawer.classList.contains('open');
+  drawer.classList.toggle('open', !isOpen);
+  overlay?.classList.toggle('open', !isOpen);
+  btn?.classList.toggle('active', !isOpen);
+}
+
+function closeMoreDrawer() {
+  document.getElementById('more-drawer')?.classList.remove('open');
+  document.getElementById('more-drawer-overlay')?.classList.remove('open');
+  document.getElementById('bn-more-btn')?.classList.remove('active');
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
@@ -121,17 +281,557 @@ function closeSidebar() {
   document.getElementById('overlay')?.classList.remove('open');
 }
 
+function toggleSidebarCollapse() {
+  document.body.classList.toggle('sidebar-collapsed');
+}
+
 // ── Demo data ─────────────────────────────────────────────────────────────
 
-function loadDemoData() {
+async function loadDemoData() {
   const db = DB.get();
   if (db.patients.length || db.serology.length || db.access.length || db.infections.length) {
-    if (!confirm('มีข้อมูลอยู่แล้ว ต้องการล้างและโหลด Demo Data?')) return;
+    const result = await openSettingsActionModal({
+      title: 'ยืนยันโหลด Demo Data',
+      message: 'มีข้อมูลอยู่แล้ว ต้องการล้างข้อมูลเดิมและโหลด Demo Data?',
+      inputValue: null,
+      confirmText: 'โหลด Demo Data',
+      danger: true,
+    });
+    if (!result.confirmed) return;
   }
   DB.reset(DEMO_DB);
   showSection('dashboard', document.querySelector('.nav-item'));
   showToast(`โหลด Demo Data สำเร็จ — ผู้ป่วย ${DEMO_DB.patients.length} ราย`, 'ok');
 }
+
+// ── Auth / permissions ───────────────────────────────────────────────────
+
+function openLogin() {
+  document.body.classList.add('auth-pending');
+  document.getElementById('login-modal')?.classList.add('open');
+  clearLoginError();
+  setTimeout(() => document.getElementById('login-username')?.focus(), 0);
+}
+
+function closeLogin() {
+  document.body.classList.remove('auth-pending');
+  document.body.classList.add('is-authenticated');
+  document.getElementById('login-modal')?.classList.remove('open');
+  setLoginLoading(false);
+  clearLoginError();
+}
+
+function requirePermission(permission, fn) {
+  return (...args) => {
+    if (!AuthService.currentUser()) {
+      openLogin();
+      return;
+    }
+    if (!AuthService.hasPermission(permission)) {
+      showToast('ไม่มีสิทธิ์ทำรายการนี้', 'error');
+      return;
+    }
+    return fn(...args);
+  };
+}
+
+function applyPermissions() {
+  document.querySelectorAll('[data-permission]').forEach(el => {
+    const isDenied = !AuthService.hasPermission(el.dataset.permission);
+    if (el.dataset.settingsPanel) {
+      const activePanel = document.querySelector('.settings-tab.active')?.dataset.settingsTab || 'options';
+      el.hidden = isDenied || el.dataset.settingsPanel !== activePanel;
+      return;
+    }
+    el.hidden = isDenied;
+  });
+}
+
+function applySettingsOptions() {
+  SettingsService.getGroups().forEach(group => {
+    group.targetIds.forEach(id => populateOptionSelect(id, group.values));
+  });
+}
+
+function populateOptionSelect(id, values) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = el.value;
+  const first = el.querySelector('option[value=""]')?.textContent || '--';
+  el.innerHTML = `<option value="">${h(first)}</option>`;
+  const options = [...values];
+  if (current && !options.includes(current)) options.push(current);
+  options.forEach(value => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = formatOptionLabel(id, value);
+    el.appendChild(opt);
+  });
+  el.value = current;
+}
+
+function formatOptionLabel(id, value) {
+  if (id === 'acc-grade') return value === '0' ? 'Grade 0 — Normal / No sign' : `Grade ${value}`;
+  return value;
+}
+
+function renderSettingsPage() {
+  renderSettingsGroups();
+  renderSettingsOptions();
+  renderUserList();
+  showSettingsPanel(document.querySelector('.settings-tab.active')?.dataset.settingsTab || 'options');
+  applyPermissions();
+}
+
+function showSettingsPanel(panel = 'options') {
+  const target = panel === 'users' ? 'users' : 'options';
+  document.querySelectorAll('[data-settings-tab]').forEach(tab => {
+    const isActive = tab.dataset.settingsTab === target;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+  document.querySelectorAll('[data-settings-panel]').forEach(el => {
+    const isDenied = el.dataset.permission && !AuthService.hasPermission(el.dataset.permission);
+    el.hidden = isDenied || el.dataset.settingsPanel !== target;
+  });
+}
+
+function renderSettingsGroups() {
+  const select = document.getElementById('settings-group');
+  if (!select) return;
+  const current = select.value;
+  const groups = SettingsService.getGroups();
+  select.innerHTML = groups.map(group => `<option value="${h(group.id)}">${h(group.label)}</option>`).join('');
+  select.value = current && groups.some(group => group.id === current) ? current : groups[0]?.id || '';
+}
+
+let settingsActionPending = null;
+
+function openSettingsActionModal({
+  title,
+  message,
+  inputValue = '',
+  inputLabel = 'ชื่อตัวเลือก',
+  confirmText = 'ตกลง',
+  danger = false,
+} = {}) {
+  const modal = document.getElementById('settings-action-modal');
+  const titleEl = document.getElementById('settings-action-title');
+  const messageEl = document.getElementById('settings-action-message');
+  const inputWrap = document.getElementById('settings-action-input-wrap');
+  const inputEl = document.getElementById('settings-action-input');
+  const inputLabelEl = document.getElementById('settings-action-input-label');
+  const confirmBtn = document.getElementById('settings-action-confirm');
+  if (!modal || !confirmBtn) return Promise.resolve({ confirmed: false, value: '' });
+
+  if (titleEl) titleEl.textContent = title || 'ยืนยันรายการ';
+  if (messageEl) messageEl.textContent = message || '';
+  if (inputLabelEl) inputLabelEl.textContent = inputLabel;
+  if (inputWrap) inputWrap.hidden = inputValue === null;
+  if (inputEl) inputEl.value = inputValue ?? '';
+  confirmBtn.textContent = confirmText;
+  confirmBtn.classList.toggle('btn-danger', danger);
+  confirmBtn.classList.toggle('btn-primary', !danger);
+  modal.classList.add('open');
+
+  requestAnimationFrame(() => {
+    const focusTarget = inputValue === null ? confirmBtn : inputEl;
+    focusTarget?.focus({ preventScroll: true });
+    if (inputEl && inputValue !== null) inputEl.select();
+  });
+
+  return new Promise(resolve => {
+    settingsActionPending = resolve;
+  });
+}
+
+function closeSettingsActionModal(confirmed = false, action = confirmed ? 'confirm' : 'cancel') {
+  const modal = document.getElementById('settings-action-modal');
+  const inputEl = document.getElementById('settings-action-input');
+  modal?.classList.remove('open');
+  const resolve = settingsActionPending;
+  settingsActionPending = null;
+  resolve?.({ confirmed, action, value: inputEl?.value ?? '' });
+}
+
+function cancelSettingsActionModal() {
+  closeSettingsActionModal(false);
+}
+
+function confirmSettingsActionModal() {
+  closeSettingsActionModal(true, 'confirm');
+}
+
+document.getElementById('settings-action-input')?.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') confirmSettingsActionModal();
+});
+
+function renderSettingsOptions() {
+  const list = document.getElementById('settings-options-list');
+  const groupId = v('settings-group');
+  if (!list || !groupId) return;
+  const group = SettingsService.getGroup(groupId);
+  if (!group) {
+    list.innerHTML = emptyHtml('ไม่พบกลุ่มตัวเลือก');
+    return;
+  }
+  const values = group.allValues || group.values;
+  list.innerHTML = `<div class="settings-list-head">
+      <div>
+        <strong>${h(group.label)}</strong>
+        <span>${group.values.length} ใช้งาน · ${group.disabledValues.length} ปิดใช้งาน</span>
+      </div>
+      <span class="badge badge-info">${h(group.id)}</span>
+    </div>
+    <div class="settings-option-list">
+    ${values.map(value => {
+      const used = SettingsService.countUsage(group.id, value, DB.get());
+      const disabled = group.disabledValues.includes(value);
+      const statusClass = disabled ? 'badge-gray' : used ? 'badge-pend' : 'badge-ok';
+      const statusText = disabled ? 'ปิดใช้งาน' : used ? 'ใช้งานอยู่' : 'พร้อมลบ';
+      return `<article class="settings-option-row ${used ? 'is-locked' : ''} ${disabled ? 'is-disabled' : ''}">
+        <div class="settings-row-icon" aria-hidden="true">⚙</div>
+        <div class="settings-row-main">
+          <div class="settings-row-title">
+            <strong>${h(value)}</strong>
+            <span class="badge ${statusClass}">${statusText}</span>
+          </div>
+          <p>${h(group.label)} · ${used ? `ถูกใช้ในข้อมูล ${used} รายการ` : 'ยังไม่มีข้อมูลใช้งานตัวเลือกนี้'}${disabled ? ' · ไม่แสดงในฟอร์มใหม่' : ''}</p>
+        </div>
+        <div class="settings-row-usage">
+          <span>Usage</span>
+          <strong>${used}</strong>
+        </div>
+        <div class="settings-row-actions">
+          <button class="btn btn-outline btn-sm" onclick="editSettingOption(${jsArg(group.id)}, ${jsArg(value)})">แก้ไข</button>
+          ${disabled ? `<button class="btn btn-outline btn-sm" onclick="toggleSettingOption(${jsArg(group.id)}, ${jsArg(value)}, false)">เปิดใช้งาน</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteSettingOption(${jsArg(group.id)}, ${jsArg(value)})">ลบ</button>
+        </div>
+      </article>`;
+    }).join('')}
+  </div>`;
+}
+
+function addSettingOption() {
+  try {
+    SettingsService.addOption(v('settings-group'), v('settings-option-new'));
+    set('settings-option-new', '');
+    applySettingsOptions();
+    renderSettingsOptions();
+    showToast('เพิ่มตัวเลือกเรียบร้อย', 'ok');
+  } catch (err) {
+    showToast(err.message || 'เพิ่มตัวเลือกไม่สำเร็จ', 'error');
+  }
+}
+
+async function editSettingOption(groupId, oldValue) {
+  const result = await openSettingsActionModal({
+    title: 'แก้ไขชื่อตัวเลือก',
+    message: `แก้ไขตัวเลือก "${oldValue}" แล้วกด บันทึก เพื่อยืนยัน`,
+    inputValue: oldValue,
+    inputLabel: 'ชื่อตัวเลือกใหม่',
+    confirmText: 'บันทึก',
+  });
+  if (!result.confirmed) return;
+  const cleanNext = String(result.value).trim();
+  if (!cleanNext) {
+    showToast('กรุณาระบุชื่อตัวเลือก', 'error');
+    return;
+  }
+  if (cleanNext === oldValue) return;
+  try {
+    SettingsService.updateOption(groupId, oldValue, cleanNext);
+    migrateOptionUsage(groupId, oldValue, cleanNext);
+    applySettingsOptions();
+    renderSettingsOptions();
+    showToast('แก้ไขตัวเลือกเรียบร้อย', 'ok');
+  } catch (err) {
+    showToast(err.message || 'แก้ไขตัวเลือกไม่สำเร็จ', 'error');
+  }
+}
+
+async function deleteSettingOption(groupId, value) {
+  const used = SettingsService.countUsage(groupId, value, DB.get());
+  if (used > 0) {
+    const result = await openSettingsActionModal({
+      title: 'ลบไม่ได้ เพราะมีข้อมูลใช้งานอยู่',
+      message: `"${value}" ถูกใช้งานอยู่ ${used} รายการ จึงลบไม่ได้ แต่สามารถปิดใช้งานเพื่อไม่ให้แสดงในฟอร์มใหม่ได้`,
+      inputValue: null,
+      confirmText: 'ปิดใช้งานแทน',
+    });
+    if (result.confirmed) {
+      SettingsService.setOptionDisabled(groupId, value, true);
+      applySettingsOptions();
+      renderSettingsOptions();
+      showToast('ปิดใช้งานตัวเลือกเรียบร้อย', 'ok');
+    }
+    return;
+  }
+  const result = await openSettingsActionModal({
+    title: 'ยืนยันการลบตัวเลือก',
+    message: `ลบตัวเลือก "${value}"? รายการนี้ยังไม่มีข้อมูลใช้งานและไม่สามารถกู้คืนได้`,
+    inputValue: null,
+    confirmText: 'ลบ',
+    danger: true,
+  });
+  if (!result.confirmed) return;
+  SettingsService.deleteOption(groupId, value);
+  applySettingsOptions();
+  renderSettingsOptions();
+  showToast('ลบตัวเลือกเรียบร้อย', 'ok');
+}
+
+async function toggleSettingOption(groupId, value, disabled) {
+  const action = disabled ? 'ปิดใช้งาน' : 'เปิดใช้งาน';
+  const result = await openSettingsActionModal({
+    title: `${action}ตัวเลือก`,
+    message: `${action}ตัวเลือก "${value}"?`,
+    inputValue: null,
+    confirmText: action,
+  });
+  if (!result.confirmed) return;
+  try {
+    SettingsService.setOptionDisabled(groupId, value, disabled);
+    applySettingsOptions();
+    renderSettingsOptions();
+    showToast(`${action}ตัวเลือกเรียบร้อย`, 'ok');
+  } catch (err) {
+    showToast(err.message || `${action}ตัวเลือกไม่สำเร็จ`, 'error');
+  }
+}
+
+function migrateOptionUsage(groupId, oldValue, newValue) {
+  const group = SettingsService.getGroup(groupId);
+  if (!group) return;
+  const db = DB.get();
+  let changed = false;
+  group.fields.forEach(field => {
+    (db[field.table] || []).forEach(row => {
+      const current = row[field.key];
+      if (Array.isArray(current)) {
+        const next = current.map(item => item === oldValue ? newValue : item);
+        if (next.join('\u0001') !== current.join('\u0001')) {
+          row[field.key] = next;
+          changed = true;
+        }
+      } else if (current === oldValue) {
+        row[field.key] = newValue;
+        changed = true;
+      }
+    });
+  });
+  if (changed) DB.reset(db);
+}
+
+function renderAuthPanel() {
+  const user = AuthService.currentUser();
+  if (!user) {
+    openLogin();
+    return;
+  }
+
+  closeLogin();
+  document.querySelectorAll('[data-auth-user]').forEach(el => {
+    el.textContent = user.username;
+  });
+  document.querySelectorAll('[data-auth-role]').forEach(el => {
+    el.textContent = AuthService.getRoleLabel(user.role);
+  });
+  document.querySelectorAll('[data-auth-initial]').forEach(el => {
+    el.textContent = user.username.slice(0, 2).toUpperCase();
+  });
+
+  renderUserList();
+  applyPermissions();
+}
+
+function setLoginLoading(isLoading) {
+  const btn = document.getElementById('login-submit');
+  if (!btn) return;
+  btn.classList.toggle('is-loading', isLoading);
+  btn.disabled = isLoading;
+  btn.setAttribute('aria-busy', String(isLoading));
+}
+
+function showLoginError(message = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง') {
+  const alert = document.getElementById('login-error');
+  if (!alert) return;
+  const text = alert.querySelector('span');
+  if (text) text.textContent = message;
+  alert.hidden = false;
+}
+
+function clearLoginError() {
+  const alert = document.getElementById('login-error');
+  if (alert) alert.hidden = true;
+}
+
+function syncRememberedLogin(user) {
+  const remember = document.getElementById('login-remember')?.checked;
+  if (remember) {
+    localStorage.setItem(LOGIN_REMEMBER_KEY, user.username);
+  } else {
+    localStorage.removeItem(LOGIN_REMEMBER_KEY);
+  }
+}
+
+function restoreRememberedLogin() {
+  const rememberedUsername = localStorage.getItem(LOGIN_REMEMBER_KEY);
+  const usernameEl = document.getElementById('login-username');
+  const rememberEl = document.getElementById('login-remember');
+  if (rememberedUsername && usernameEl) usernameEl.value = rememberedUsername;
+  if (rememberEl) rememberEl.checked = Boolean(rememberedUsername);
+}
+
+function toggleLoginPassword() {
+  const input = document.getElementById('login-password');
+  const btn = document.querySelector('.password-toggle');
+  if (!input || !btn) return;
+  const showPassword = input.type === 'password';
+  input.type = showPassword ? 'text' : 'password';
+  btn.setAttribute('aria-pressed', String(showPassword));
+  btn.setAttribute('aria-label', showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
+  input.focus();
+}
+
+async function login() {
+  setLoginLoading(true);
+  clearLoginError();
+  try {
+    const user = await AuthService.login(v('login-username'), v('login-password'));
+    if (!user) {
+      showLoginError();
+      showToast('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
+      document.getElementById('login-password')?.focus();
+      return;
+    }
+    syncRememberedLogin(user);
+    set('login-password', '');
+    renderAuthPanel();
+    renderDashboard();
+    renderDailyDashboard();
+    updateBadges();
+    showToast(`เข้าสู่ระบบ: ${user.username}`, 'ok');
+  } finally {
+    setLoginLoading(false);
+  }
+}
+
+function logout() {
+  AuthService.logout();
+  document.body.classList.remove('is-authenticated');
+  openLogin();
+}
+
+async function createUser() {
+  return saveUserAccount();
+}
+
+async function saveUserAccount() {
+  try {
+    const editId = v('user-edit-id');
+    const payload = {
+      username: v('user-new-name'),
+      password: v('user-new-password'),
+      role: v('user-new-role'),
+    };
+    if (editId) await AuthService.updateUser(editId, payload);
+    else await AuthService.createUser(payload);
+    clearUserForm();
+    renderUserList();
+    renderAuthPanel();
+    showToast(editId ? 'แก้ไขผู้ใช้สำเร็จ' : 'เพิ่มผู้ใช้สำเร็จ', 'ok');
+  } catch (err) {
+    showToast(err.message || 'บันทึกผู้ใช้ไม่สำเร็จ', 'error');
+  }
+}
+
+function editUserAccount(id) {
+  const user = AuthService.getUsers().find(item => item.id === id);
+  if (!user) return;
+  set('user-edit-id', user.id);
+  set('user-new-name', user.username);
+  set('user-new-password', '');
+  set('user-new-role', user.role);
+  document.getElementById('user-new-name')?.focus();
+}
+
+async function deleteUserAccount(id) {
+  try {
+    const user = AuthService.getUsers().find(item => item.id === id);
+    if (!user) throw new Error('ไม่พบผู้ใช้');
+    const result = await openSettingsActionModal({
+      title: 'ยืนยันการลบผู้ใช้',
+      message: `ลบผู้ใช้ "${user.username}"? รายการนี้ไม่สามารถกู้คืนได้`,
+      inputValue: null,
+      confirmText: 'ลบผู้ใช้',
+      danger: true,
+    });
+    if (!result.confirmed) return;
+    AuthService.deleteUser(id);
+    clearUserForm();
+    renderUserList();
+    showToast('ลบผู้ใช้เรียบร้อย', 'ok');
+  } catch (err) {
+    showToast(err.message || 'ลบผู้ใช้ไม่สำเร็จ', 'error');
+  }
+}
+
+function clearUserForm() {
+  set('user-edit-id', '');
+  set('user-new-name', '');
+  set('user-new-password', '');
+  set('user-new-role', 'viewer');
+}
+
+function renderUserList() {
+  const el = document.getElementById('user-list');
+  if (!el) return;
+  const users = AuthService.getUsers();
+  if (!users.length) {
+    el.innerHTML = emptyHtml('ยังไม่มีผู้ใช้ในระบบ');
+    return;
+  }
+  el.innerHTML = `
+    <div class="settings-user-list">
+      ${users.map(user => `
+        <article class="settings-user-row">
+          <div class="settings-user-avatar" aria-hidden="true">${h(user.username.slice(0, 2).toUpperCase())}</div>
+          <div class="settings-user-main">
+            <div class="settings-row-title">
+              <strong>${h(user.username)}</strong>
+              <span class="badge badge-info">${h(AuthService.getRoleLabel(user.role))}</span>
+              <span class="badge badge-ok">Active</span>
+            </div>
+            <p>Created ${h(new Date(user.createdAt).toLocaleDateString('th-TH'))} · Backoffice User</p>
+          </div>
+          <div class="settings-row-actions">
+            <button class="btn btn-outline btn-sm" onclick="editUserAccount(${jsArg(user.id)})">แก้ไข</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUserAccount(${jsArg(user.id)})">ลบ</button>
+          </div>
+        </article>
+      `).join('')}
+    </div>`;
+}
+
+// ── Auto refresh ─────────────────────────────────────────────────────────
+
+window.addEventListener('storage', (ev) => {
+  if (ev.key !== CONFIG.STORAGE_KEY) return;
+  DB.init();
+  refreshActiveSection();
+});
+
+window.addEventListener('hdic:datachange', () => {
+  refreshActiveSection({ silent: true });
+});
+
+window.addEventListener('hdic:settingschange', () => {
+  applySettingsOptions();
+  if (document.querySelector('.section.active')?.id === 'settings') {
+    renderSettingsPage();
+  }
+});
 
 // ── Date display ──────────────────────────────────────────────────────────
 
@@ -152,52 +852,153 @@ if ('serviceWorker' in navigator) {
   );
 }
 
+document.getElementById('login-password')?.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') login();
+});
+document.getElementById('login-username')?.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') document.getElementById('login-password')?.focus();
+});
+document.querySelectorAll('#login-username, #login-password').forEach(el => {
+  el.addEventListener('input', clearLoginError);
+});
+
 // ── Expose to global scope (HTML onclick handlers) ────────────────────────
 
 Object.assign(window, {
   // Router
-  showSection, toggleSidebar, closeSidebar, syncBn,
+  showSection, toggleSidebar, closeSidebar, toggleSidebarCollapse, refreshActiveSection, syncBn,
+  toggleMoreDrawer, closeMoreDrawer,
 
   // Patient
-  savePatient, editPatient, openPatientModal, closePtModal,
-  confirmDeletePatient,
+  savePatient: requirePermission('patient.write', savePatient),
+  editPatient: requirePermission('patient.write', editPatient),
+  openPatientModal: requirePermission('patient.write', openPatientModal),
+  closePtModal,
+  confirmDeletePatient: requirePermission('patient.write', confirmDeletePatient),
   renderTable: (type) => {
     if (type === 'patient')   renderPatientTable();
     if (type === 'serology')  renderSeroTable();
     if (type === 'access')    renderAccessTable();
     if (type === 'infection') renderInfTable();
+    if (type === 'schedule')  renderSchedulePage();
+    if (type === 'attendance') renderAttendancePage();
+    applyPermissions();
   },
 
   // Serology
-  saveSerology, editSerology, openSeroModal, closeSeroModal, confirmDeleteSero,
+  saveSerology: requirePermission('clinical.write', saveSerology),
+  editSerology: requirePermission('clinical.write', editSerology),
+  openSeroModal: requirePermission('clinical.write', openSeroModal),
+  closeSeroModal,
+  confirmDeleteSero: requirePermission('clinical.write', confirmDeleteSero),
 
   // Vascular Access
-  saveAccess, editAccess, openAccessModal, closeAccessModal, confirmDeleteAccess,
+  saveAccess: requirePermission('clinical.write', saveAccess),
+  editAccess: requirePermission('clinical.write', editAccess),
+  openAccessModal: requirePermission('clinical.write', openAccessModal),
+  closeAccessModal,
+  confirmDeleteAccess: requirePermission('clinical.write', confirmDeleteAccess),
 
   // Infection
-  saveInfection, editInfection, openInfModal, closeInfModal, confirmDeleteInf,
+  saveInfection: requirePermission('clinical.write', saveInfection),
+  editInfection: requirePermission('clinical.write', editInfection),
+  openInfModal: requirePermission('clinical.write', openInfModal),
+  closeInfModal,
+  confirmDeleteInf: requirePermission('clinical.write', confirmDeleteInf),
 
   // Report
-  generateReport, exportJSON, exportCSV, importJSON, clearAll,
-  renderMonthlyReport,
+  generateReport: requirePermission('report.run', generateReport),
+  showReportPanel: requirePermission('report.run', showReportPanel),
+  exportJSON: requirePermission('data.export', exportJSON),
+  exportCSV: requirePermission('data.export', exportCSV),
+  importJSON: requirePermission('data.import', importJSON),
+  clearAll: requirePermission('data.admin', clearAll),
+  renderMonthlyReport: requirePermission('report.run', renderMonthlyReport),
 
   // Surveillance
   renderSurveillance,
+
+  // Topbar search
+  onTopbarSearch,
+  hideTopbarResults,
+  goToPatient,
+
+  // Daily HD operations
+  renderDailyDashboard,
+  renderSchedulePage,
+  renderAttendancePage,
+  renderResourcePage,
+  renderStockPage,
+  renderDlcAlertPage,
+  // Calendar navigation
+  setCalView,
+  calPrev,
+  calNext,
+  calToday,
+  calSelectDate,
+  exportAttendancePDF: requirePermission('operations.write', exportAttendancePDF),
+  openAppointmentModal: requirePermission('operations.write', openAppointmentModal),
+  editAppointment: requirePermission('operations.write', editAppointment),
+  closeAppointmentModal,
+  saveAppointment: requirePermission('operations.write', saveAppointment),
+  confirmDeleteAppointment: requirePermission('operations.write', confirmDeleteAppointment),
+  openAttendanceModal: requirePermission('operations.write', openAttendanceModal),
+  closeAttendanceModal,
+  saveAttendance: requirePermission('operations.write', saveAttendance),
+  openResourceModal: requirePermission('operations.write', openResourceModal),
+  editResource: requirePermission('operations.write', editResource),
+  closeResourceModal,
+  saveResource: requirePermission('operations.write', saveResource),
+  openStockItemModal: requirePermission('stock.write', openStockItemModal),
+  editStockItem: requirePermission('stock.write', editStockItem),
+  closeStockItemModal,
+  saveStockItem: requirePermission('stock.write', saveStockItem),
+  openStockMoveModal: requirePermission('stock.write', openStockMoveModal),
+  closeStockMoveModal,
+  saveStockMove: requirePermission('stock.write', saveStockMove),
 
   // Modal
   closeModal: closeDeleteModal,
 
   // Demo
-  loadDemoData,
+  loadDemoData: requirePermission('data.admin', loadDemoData),
 
   // Dashboard (used by importJSON)
   renderDashboard,
+
+  // Auth
+  login, logout,
+  toggleLoginPassword,
+  createUser: requirePermission('auth.admin', createUser),
+  saveUserAccount: requirePermission('auth.admin', saveUserAccount),
+  editUserAccount: requirePermission('auth.admin', editUserAccount),
+  deleteUserAccount: requirePermission('auth.admin', deleteUserAccount),
+  clearUserForm,
+
+  // Settings
+  renderSettingsOptions: requirePermission('auth.admin', renderSettingsOptions),
+  showSettingsPanel: requirePermission('auth.admin', showSettingsPanel),
+  openSettingsActionModal,
+  cancelSettingsActionModal,
+  confirmSettingsActionModal,
+  addSettingOption: requirePermission('auth.admin', addSettingOption),
+  editSettingOption: requirePermission('auth.admin', editSettingOption),
+  deleteSettingOption: requirePermission('auth.admin', deleteSettingOption),
+  toggleSettingOption: requirePermission('auth.admin', toggleSettingOption),
 
   updateBadges,
 });
 
 // ── Initialise ────────────────────────────────────────────────────────────
 
+await AuthService.init();
+SettingsService.init();
+restoreRememberedLogin();
 DB.init();
-renderDashboard();
-updateBadges();
+applySettingsOptions();
+renderAuthPanel();
+if (AuthService.currentUser()) {
+  renderDashboard();
+  renderDailyDashboard();
+  updateBadges();
+}

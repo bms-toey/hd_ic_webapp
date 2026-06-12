@@ -58,4 +58,32 @@ export const DEMO_DB = {
     {id:'di08',ptId:'dp11',date:'2026-06-01',type:'Bacteremia (Unknown source)',org:'E. coli',bc:'Positive',hosp:'ใช่',access:'AVF',abx:'Ceftriaxone IV 2g OD',abxDur:'14 วัน',outcome:'กำลังรักษา',note:'Bacteremia E. coli'},
     {id:'di09',ptId:'dp09',date:'2026-06-02',type:'CRBSI (Catheter-related BSI)',org:'Pseudomonas aeruginosa',bc:'Positive',hosp:'ใช่',access:'Non-tunneled CVC',abx:'Ceftazidime IV',abxDur:'กำลังรักษา',outcome:'กำลังรักษา',note:'CRBSI Pseudomonas — สืบสวน Outbreak'},
   ],
+  appointments: [
+    {id:'dap01',date:'2026-06-09',shift:'Shift 1 (เช้า)',ptId:'dp01',bedId:'dbed01',machineId:'dmch01',status:'มาแล้ว',note:''},
+    {id:'dap02',date:'2026-06-09',shift:'Shift 1 (เช้า)',ptId:'dp02',bedId:'dbed02',machineId:'dmch02',status:'นัดแล้ว',note:''},
+    {id:'dap03',date:'2026-06-09',shift:'Shift 2 (บ่าย)',ptId:'dp03',bedId:'dbed03',machineId:'dmch03',status:'นัดแล้ว',note:'HCV - แยกเครื่อง'},
+    {id:'dap04',date:'2026-06-09',shift:'Shift 2 (บ่าย)',ptId:'dp04',bedId:'dbed04',machineId:'dmch04',status:'นัดแล้ว',note:''},
+  ],
+  attendance: [
+    {id:'dat01',appointmentId:'dap01',ptId:'dp01',date:'2026-06-09',status:'มาแล้ว',time:'07:25',staff:'Nurse A',preWeight:'61.2',postWeight:'58.6',bpPre:'148/82',bpPost:'132/76',ufGoal:'2.6',ufActual:'2.5',complication:'none',note:''},
+  ],
+  dialysisSessions: [],
+  resources: [
+    {id:'dbed01',type:'bed',name:'Bed-01',status:'พร้อมใช้',zone:'HD Unit',note:''},
+    {id:'dbed02',type:'bed',name:'Bed-02',status:'พร้อมใช้',zone:'HD Unit',note:''},
+    {id:'dbed03',type:'bed',name:'Bed-03',status:'พร้อมใช้',zone:'HD Unit',note:''},
+    {id:'dbed04',type:'bed',name:'Bed-04',status:'พร้อมใช้',zone:'HD Unit',note:''},
+    {id:'dmch01',type:'machine',name:'HD-01',status:'พร้อมใช้',zone:'HD Unit',note:''},
+    {id:'dmch02',type:'machine',name:'HD-02',status:'พร้อมใช้',zone:'HD Unit',note:''},
+    {id:'dmch03',type:'machine',name:'HD-03',status:'แยกผู้ป่วยติดเชื้อ',zone:'Isolation',note:'HCV'},
+    {id:'dmch04',type:'machine',name:'HD-04',status:'พร้อมใช้',zone:'HD Unit',note:''},
+  ],
+  stockItems: [
+    {id:'dst01',name:'Dialyzer F6',category:'Dialyzer',unit:'ชิ้น',qty:18,minQty:10,lot:'DLZ-2601',expire:'2027-01-31',supplier:'Demo Medical'},
+    {id:'dst02',name:'Blood line set',category:'Set',unit:'ชุด',qty:8,minQty:10,lot:'BLS-2602',expire:'2027-02-28',supplier:'Demo Medical'},
+    {id:'dst03',name:'NSS 1000 ml',category:'Fluid',unit:'ขวด',qty:42,minQty:20,lot:'NSS-2603',expire:'2027-03-31',supplier:'Demo Medical'},
+  ],
+  stockMoves: [
+    {id:'dsm01',itemId:'dst02',date:'2026-06-09',type:'เบิกใช้',qty:4,staff:'Nurse A',note:'Shift 1'},
+  ],
 };

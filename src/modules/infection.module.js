@@ -1,18 +1,18 @@
 import { DB } from '../services/db.service.js';
-import { uid, v, set, emptyHtml, fillSelect } from '../utils/dom.util.js';
+import { uid, v, set, emptyHtml, fillSelect, h, hd, jsArg } from '../utils/dom.util.js';
 import { thDate, todayStr } from '../utils/date.util.js';
 import { showToast } from '../components/toast.component.js';
 import { openModal, closeModal, confirmDelete } from '../components/modal.component.js';
 
-const BC_MAP = { Positive:'badge-pos', Negative:'badge-neg', Pending:'badge-pend', Contamination:'badge-gray' };
-
-// ── Modal ─────────────────────────────────────────────────────────────────
+const BC_MAP = { Positive: 'badge-pos', Negative: 'badge-neg', Pending: 'badge-pend', Contamination: 'badge-gray' };
 
 export function openInfModal() {
   clearInfForm();
   fillSelect('inf-pt', DB.getPatients());
   set('inf-date', todayStr());
   document.getElementById('inf-modal-title').textContent = 'บันทึก Infection Event';
+  setContext('Infection Event ใหม่', 'ระบุประเภท infection, organism, blood culture, antibiotic และ outcome ให้ครบเท่าที่มีข้อมูล');
+  setDeleteVisible(false);
   openModal('inf-modal');
 }
 
@@ -21,24 +21,32 @@ export function closeInfModal() {
   clearInfForm();
 }
 
-// ── CRUD ──────────────────────────────────────────────────────────────────
-
 export function saveInfection() {
   const ptId = v('inf-pt');
   const date = v('inf-date');
-  if (!ptId || !date) { showToast('กรุณาเลือกผู้ป่วยและวันที่', 'error'); return; }
+  if (!ptId || !date) {
+    showToast('กรุณาเลือกผู้ป่วยและวันที่', 'error');
+    return;
+  }
 
   const eid = v('inf-id');
   const record = {
-    id: eid || uid(), ptId, date,
-    type: v('inf-type'), org: v('inf-org'), bc: v('inf-bc'),
-    hosp: v('inf-hosp'), access: v('inf-access'),
-    abx: v('inf-abx'), abxDur: v('inf-abx-dur'), outcome: v('inf-outcome'),
+    id: eid || uid(),
+    ptId,
+    date,
+    type: v('inf-type'),
+    org: v('inf-org'),
+    bc: v('inf-bc'),
+    hosp: v('inf-hosp'),
+    access: v('inf-access'),
+    abx: v('inf-abx'),
+    abxDur: v('inf-abx-dur'),
+    outcome: v('inf-outcome'),
     note: v('inf-note'),
   };
 
   if (eid) DB.updateInfection(eid, record);
-  else     DB.addInfection(record);
+  else DB.addInfection(record);
 
   renderInfTable();
   updateBadges();
@@ -63,13 +71,14 @@ export function editInfection(id) {
   set('inf-outcome', inf.outcome || '');
   set('inf-note', inf.note || '');
   document.getElementById('inf-modal-title').textContent = 'แก้ไข Infection Event';
+  const p = DB.getPatients().find(x => x.id === inf.ptId) || { hn: '?', name: '?' };
+  setContext(`${p.hn} - ${p.name}`, `${inf.type || 'Infection Event'} | ${inf.org || 'ไม่ระบุ organism'} | ${thDate(inf.date)}`);
+  setDeleteVisible(true);
   openModal('inf-modal');
 }
 
-// ── Table ─────────────────────────────────────────────────────────────────
-
 export function renderInfTable() {
-  const q   = (v('inf-search') || '').toLowerCase();
+  const q = (v('inf-search') || '').toLowerCase();
   const flt = v('inf-filter') || '';
   const patients = DB.getPatients();
 
@@ -80,7 +89,7 @@ export function renderInfTable() {
 
   rows = rows.filter(r => {
     if (q && !(r.hn + r.pname + (r.org || '')).toLowerCase().includes(q)) return false;
-    if (flt && r.type && !r.type.includes(flt)) return false;
+    if (flt && !String(r.type || '').includes(flt)) return false;
     return true;
   }).sort((a, b) => b.date.localeCompare(a.date));
 
@@ -89,32 +98,100 @@ export function renderInfTable() {
     return;
   }
 
-  const trs = rows.map(r => `<tr>
-    <td data-label="HN" class="td-hn">${r.hn}</td>
-    <td data-label="ชื่อ">${r.pname}</td>
-    <td data-label="วันที่" class="td-muted">${thDate(r.date)}</td>
-    <td data-label="ประเภท" style="font-size:11px">${r.type || '-'}</td>
-    <td data-label="Organism" class="td-muted">${r.org || '-'}</td>
-    <td data-label="Blood Cx">${r.bc ? `<span class="badge ${BC_MAP[r.bc] || 'badge-gray'}">${r.bc}</span>` : '-'}</td>
-    <td data-label="Admit">${r.hosp === 'ใช่' ? '<span class="badge badge-pos">Admit</span>' : '<span class="badge badge-neg">OPD</span>'}</td>
-    <td data-label="Antibiotic" class="td-muted" style="font-size:11px">${r.abx || '-'}</td>
-    <td data-label="Outcome" class="td-muted" style="font-size:11px">${r.outcome || '-'}</td>
-    <td data-label=""><button class="btn btn-outline btn-sm" onclick="editInfection('${r.id}')">แก้ไข</button> <button class="btn btn-danger btn-sm" onclick="confirmDeleteInf('${r.id}')">ลบ</button></td>
-  </tr>`).join('');
-
-  document.getElementById('inf-table').innerHTML =
-    `<table><thead><tr><th>HN</th><th>ชื่อ</th><th>วันที่</th><th>ประเภท</th><th>Organism</th><th>Blood Cx</th><th>Admit</th><th>Antibiotic</th><th>Outcome</th><th>จัดการ</th></tr></thead><tbody>${trs}</tbody></table>`;
+  document.getElementById('inf-table').innerHTML = `<div class="record-card-list">
+    ${rows.map(renderInfectionCard).join('')}
+  </div>`;
 }
 
-// ── Internal ──────────────────────────────────────────────────────────────
+function renderInfectionCard(r) {
+  const state = r.bc === 'Positive' || criticalOrganism(r.org) ? 'danger'
+    : r.bc === 'Pending' || isAdmit(r.hosp) ? 'warning'
+    : 'info';
+  const admit = isAdmit(r.hosp) ? '<span class="badge badge-pos">Admit</span>' : '<span class="badge badge-neg">OPD</span>';
+
+  return `<article class="record-card is-${state} clickable-row" tabindex="0"
+      role="button" aria-label="Open infection ${h(r.hn || '')}"
+      onclick="editInfection(${jsArg(r.id)})" onkeydown="if(event.key==='Enter') editInfection(${jsArg(r.id)})">
+    <div class="record-card-top">
+      <div class="record-icon" aria-hidden="true">I</div>
+      <div class="record-title">
+        <strong>${h(r.pname || '-')}</strong>
+        <span>${h(r.hn || '-')} | Event ${thDate(r.date)} | ${hd(r.type)}</span>
+      </div>
+      <div class="record-meta">
+        ${r.bc ? `<span class="badge ${BC_MAP[r.bc] || 'badge-gray'}">Blood Cx ${h(r.bc)}</span>` : ''}
+        ${admit}
+      </div>
+    </div>
+    <div class="record-card-bottom">
+      <section class="record-info-block">
+        <span class="record-label">Infection Type</span>
+        <strong>${hd(r.type)}</strong>
+        <small>Access: ${hd(r.access)}</small>
+      </section>
+      <section class="record-info-block">
+        <span class="record-label">Organism</span>
+        ${organismBadge(r.org)}
+        <small>Blood culture: ${hd(r.bc)}</small>
+      </section>
+      <section class="record-info-block">
+        <span class="record-label">Care Level</span>
+        <strong>${admit}</strong>
+        <small>Recorded: ${thDate(r.date)}</small>
+      </section>
+      <section class="record-info-block">
+        <span class="record-label">Antibiotic</span>
+        <strong>${hd(r.abx)}</strong>
+        <small>Duration: ${hd(r.abxDur)}</small>
+      </section>
+      <section class="record-info-block">
+        <span class="record-label">Outcome / Notes</span>
+        <strong>${hd(r.outcome)}</strong>
+        <small class="record-note">${hd(r.note)}</small>
+      </section>
+    </div>
+  </article>`;
+}
+
+function criticalOrganism(value = '') {
+  return /MRSA|ESBL|CRE|PSEUDOMONAS/i.test(value);
+}
+
+function isAdmit(value = '') {
+  return value === 'ใช่' || value === 'เนเธเน' || /admit|yes/i.test(value);
+}
+
+function organismBadge(value) {
+  if (!value) return '<span class="culture-badge culture-info">Unknown</span>';
+  const cls = criticalOrganism(value) ? 'culture-danger'
+    : /MSSA|KLEBSIELLA|E\. COLI|AUREUS/i.test(value) ? 'culture-warn'
+    : 'culture-info';
+  return `<span class="culture-badge ${cls}">${h(value)}</span>`;
+}
 
 function clearInfForm() {
-  ['inf-id','inf-pt','inf-date','inf-type','inf-org','inf-bc','inf-hosp',
-   'inf-access','inf-abx','inf-abx-dur','inf-outcome','inf-note'].forEach(id => set(id, ''));
+  ['inf-id', 'inf-pt', 'inf-date', 'inf-type', 'inf-org', 'inf-bc', 'inf-hosp',
+   'inf-access', 'inf-abx', 'inf-abx-dur', 'inf-outcome', 'inf-note'].forEach(id => set(id, ''));
+  setDeleteVisible(false);
+}
+
+function setDeleteVisible(show) {
+  const btn = document.getElementById('inf-delete-btn');
+  if (btn) btn.hidden = !show;
+}
+
+function setContext(title, detail) {
+  const el = document.getElementById('inf-context');
+  if (!el) return;
+  el.innerHTML = `<strong>${h(title)}</strong><span>${h(detail)}</span>`;
 }
 
 export function confirmDeleteInf(id) {
-  confirmDelete('infections', id, () => { renderInfTable(); updateBadges(); });
+  confirmDelete('infections', id, () => {
+    closeInfModal();
+    renderInfTable();
+    updateBadges();
+  });
 }
 
 let updateBadges = () => {};

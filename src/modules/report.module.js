@@ -1,6 +1,6 @@
 import { DB } from '../services/db.service.js';
 import { StorageService } from '../services/storage.service.js';
-import { v } from '../utils/dom.util.js';
+import { v, h, hd } from '../utils/dom.util.js';
 import { thDate, todayStr } from '../utils/date.util.js';
 import { showToast } from '../components/toast.component.js';
 
@@ -20,20 +20,76 @@ export function generateReport() {
       <div class="stat-card teal"><div class="num">${infs.length}</div><div class="lbl">Infection Events</div></div>
       <div class="stat-card blue"><div class="num">${seros.length}</div><div class="lbl">Serology Tests</div></div>
       <div class="stat-card teal"><div class="num">${accs.length}</div><div class="lbl">Access Assessments</div></div>
-      <div class="stat-card amber"><div class="num">${infs.filter(x => x.hosp === 'ใช่').length}</div><div class="lbl">Hospitalizations</div></div>
+      <div class="stat-card amber"><div class="num">${infs.filter(x => isAdmit(x.hosp)).length}</div><div class="lbl">Hospitalizations</div></div>
     </div>`;
 
-  if (infs.length) {
-    const rows = infs.map(x => {
+  html += reportTable({
+    title: 'Infection Events',
+    empty: 'ไม่พบ Infection Event ในช่วงเวลานี้',
+    headers: ['วันที่','HN','ชื่อ','ประเภท','Organism','Outcome'],
+    rows: infs.map(x => {
       const p = patients.find(pt => pt.id === x.ptId) || { hn: '?', name: '?' };
-      return `<tr><td>${thDate(x.date)}</td><td class="td-hn">${p.hn}</td><td>${p.name}</td><td style="font-size:11px">${x.type || '-'}</td><td>${x.org || '-'}</td><td>${x.outcome || '-'}</td></tr>`;
-    }).join('');
-    html += `<div class="section-label" style="margin-top:10px">Infection Events</div>
-      <div class="table-wrap"><table><thead><tr><th>วันที่</th><th>HN</th><th>ชื่อ</th><th>ประเภท</th><th>Organism</th><th>Outcome</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  }
+      return [thDate(x.date), h(p.hn), h(p.name), hd(x.type), hd(x.org), hd(x.outcome)];
+    }),
+  });
+
+  html += reportTable({
+    title: 'Serology Tests',
+    empty: 'ไม่พบผล Serology ในช่วงเวลานี้',
+    headers: ['วันที่','HN','ชื่อ','HBsAg','Anti-HCV','Anti-HIV','Due Date'],
+    rows: seros.map(x => {
+      const p = patients.find(pt => pt.id === x.ptId) || { hn: '?', name: '?' };
+      return [thDate(x.date), h(p.hn), h(p.name), hd(x.hbsag), hd(x.hcv), hd(x.hiv), x.nextDue ? thDate(x.nextDue) : '-'];
+    }),
+  });
+
+  html += reportTable({
+    title: 'Access Assessments',
+    empty: 'ไม่พบข้อมูล Vascular Access ในช่วงเวลานี้',
+    headers: ['วันที่','HN','ชื่อ','Access Type','Exit Site','Status'],
+    rows: accs.map(x => {
+      const p = patients.find(pt => pt.id === x.ptId) || { hn: '?', name: '?' };
+      return [thDate(x.date), h(p.hn), h(p.name), hd(x.type), x.grade !== '' && x.grade !== undefined ? `G${h(x.grade)}` : '-', hd(x.accessStatus)];
+    }),
+  });
 
   html += '</div>';
   document.getElementById('rpt-output').innerHTML = html;
+}
+
+function reportTable({ title, empty, headers, rows }) {
+  if (!rows.length) {
+    return `<div class="report-section">
+      <div class="section-label mt-10">${h(title)}</div>
+      ${emptyReportState(empty)}
+    </div>`;
+  }
+  return `<div class="report-section">
+    <div class="section-label mt-10">${h(title)}</div>
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>${headers.map(head => `<th>${h(head)}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${rows.map(row => `<tr>${row.map((val, idx) => reportCell(headers[idx], val)).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function reportCell(header, value) {
+  const cell = value === undefined || value === null || value === '' ? '-' : value;
+  return `<td data-label="${h(header || '')}">${cell}</td>`;
+}
+
+function emptyReportState(message) {
+  return `<div class="empty-state"><div class="empty-icon">📄</div><p>${h(message)}</p></div>`;
+}
+
+function isAdmit(value = '') {
+  return value === 'ใช่' || value === 'เนเธเน' || /admit|yes/i.test(value);
 }
 
 // ── Export / Import / Clear ───────────────────────────────────────────────
@@ -60,7 +116,8 @@ export function importJSON() {
     const fr = new FileReader();
     fr.onload = (ev) => {
       try {
-        DB.reset(JSON.parse(ev.target.result));
+        const data = normalizeImportedDB(JSON.parse(ev.target.result));
+        DB.reset(data);
         showToast('นำเข้าข้อมูลสำเร็จ', 'ok');
         window.renderDashboard?.();
       } catch {
@@ -72,8 +129,48 @@ export function importJSON() {
   inp.click();
 }
 
-export function clearAll() {
-  if (!confirm('ลบข้อมูลทั้งหมด? ไม่สามารถกู้คืนได้')) return;
+function normalizeImportedDB(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid database file');
+  }
+
+  const keys = ['patients', 'serology', 'access', 'infections'];
+  if (!keys.every(key => Array.isArray(data[key]))) {
+    throw new Error('Invalid database schema');
+  }
+
+  return {
+    patients: data.patients.map(normalizeRecord),
+    serology: data.serology.map(normalizeRecord),
+    access: data.access.map(normalizeRecord),
+    infections: data.infections.map(normalizeRecord),
+  };
+}
+
+function normalizeRecord(record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
+    throw new Error('Invalid record');
+  }
+
+  return Object.fromEntries(
+    Object.entries(record).map(([key, val]) => {
+      if (Array.isArray(val)) return [key, val.map(item => String(item ?? ''))];
+      if (val === null || val === undefined) return [key, ''];
+      if (typeof val === 'object') return [key, JSON.stringify(val)];
+      return [key, String(val)];
+    })
+  );
+}
+
+export async function clearAll() {
+  const result = await window.openSettingsActionModal?.({
+    title: 'ยืนยันลบข้อมูลทั้งหมด',
+    message: 'ลบข้อมูลทั้งหมด? รายการนี้ไม่สามารถกู้คืนได้',
+    inputValue: null,
+    confirmText: 'ลบข้อมูลทั้งหมด',
+    danger: true,
+  });
+  if (!result?.confirmed) return;
   DB.reset({ patients: [], serology: [], access: [], infections: [] });
   showToast('ล้างข้อมูลเรียบร้อย', 'ok');
   window.renderDashboard?.();
@@ -81,19 +178,22 @@ export function clearAll() {
 
 // ── Monthly report ────────────────────────────────────────────────────────
 
-export function initMonthlyReport() {
+export function initMonthlyReport(prefix = 'monthly') {
   const now = new Date();
   const y = now.getFullYear();
   const m = now.getMonth();
   const pad = n => String(n).padStart(2, '0');
-  const v2 = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-  v2('monthly-from', `${y}-${pad(m)}`);
-  v2('monthly-to',   `${y}-${pad(m + 1)}`);
+  const v2 = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = val;
+  };
+  v2(`${prefix}-from`, `${y}-${pad(m)}`);
+  v2(`${prefix}-to`,   `${y}-${pad(m + 1)}`);
 }
 
-export function renderMonthlyReport() {
-  const fromStr = v('monthly-from');
-  const toStr   = v('monthly-to');
+export function renderMonthlyReport(prefix = 'monthly') {
+  const fromStr = v(`${prefix}-from`);
+  const toStr   = v(`${prefix}-to`);
   if (!fromStr || !toStr) { showToast('กรุณาเลือกช่วงเดือน', 'error'); return; }
 
   const from = new Date(fromStr + '-01');
@@ -142,10 +242,14 @@ export function renderMonthlyReport() {
   });
 
   let html = `<div class="card"><div class="card-title"><span class="dot"></span>สรุปข้อมูล: ${thDate(fromStr+'-01')} ถึง ${thDate(toStr+'-01')}</div>
-    <div class="table-wrap"><table><thead><tr>${rows[0].map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
-  for (let i = 1; i < rows.length; i++) {
-    html += `<tr>${rows[i].map((val, idx) => `<td ${idx===0?'class="td-muted" style="font-family:IBM Plex Mono;font-size:11px"':''}>${val}</td>`).join('')}</tr>`;
-  }
-  html += '</tbody></table></div></div>';
-  document.getElementById('monthly-output').innerHTML = html;
+    `;
+  html += reportTable({
+    title: 'Access mix and CRBSI summary',
+    empty: 'ไม่พบข้อมูลสรุปรายเดือนในช่วงเวลานี้',
+    headers: rows[0],
+    rows: rows.slice(1).map(row => row.map(value => h(value))),
+  });
+  html += '</div>';
+  const output = document.getElementById(`${prefix}-output`);
+  if (output) output.innerHTML = html;
 }

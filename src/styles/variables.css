@@ -1,37 +1,97 @@
 /* ===== DESIGN TOKENS ===== */
 :root {
-  /* Colors */
-  --teal-50: #E1F5EE; --teal-100: #9FE1CB; --teal-400: #1D9E75;
-  --teal-600: #0F6E56; --teal-800: #085041; --teal-900: #04342C;
-  --amber-50: #FAEEDA; --amber-400: #BA7517; --amber-600: #854F0B; --amber-800: #633806;
-  --red-50: #FCEBEB; --red-400: #E24B4A; --red-600: #A32D2D; --red-800: #791F1F;
-  --blue-50: #E6F1FB; --blue-400: #378ADD; --blue-600: #185FA5;
-  --green-50: #EAF3DE; --green-400: #639922; --green-600: #3B6D11;
-  --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-400: #888780;
-  --gray-600: #5F5E5A; --gray-800: #444441;
+  /* Blues — primary palette */
+  --blue-50:  #EFF6FF; --blue-100: #DBEAFE; --blue-200: #BFDBFE;
+  --blue-400: #60A5FA; --blue-500: #3B82F6; --blue-600: #2563EB;
+  --blue-700: #1D4ED8; --blue-800: #1E40AF; --blue-900: #1E3A8A;
 
-  /* Semantic */
-  --bg: #F7F6F2;
-  --surface: #FFFFFF;
-  --surface2: #F1EFE8;
-  --text: #1A1916;
-  --text-muted: #5F5E5A;
-  --text-hint: #B4B2A9;
-  --border: rgba(68, 68, 65, 0.12);
-  --border-md: rgba(68, 68, 65, 0.22);
+  /* Indigo — sidebar / header accent */
+  --indigo-900: #1E1B4B; --indigo-800: #312E81; --indigo-700: #3730A3;
+  --indigo-600: #4338CA; --indigo-400: #818CF8; --indigo-50: #EEF2FF;
 
-  /* Shape */
-  --radius: 8px;
+  /* Sky — light accent */
+  --sky-50: #F0F9FF; --sky-100: #E0F2FE; --sky-400: #38BDF8; --sky-600: #0284C7;
+
+  /* Teal — keep for IC / clinical */
+  --teal-50: #F0FDFA; --teal-100: #CCFBF1; --teal-400: #2DD4BF;
+  --teal-600: #0D9488; --teal-800: #115E59; --teal-900: #0F3D3A;
+
+  /* Amber */
+  --amber-50: #FFFBEB; --amber-100: #FEF3C7;
+  --amber-400: #FBBF24; --amber-600: #D97706; --amber-800: #92400E;
+
+  /* Red / Rose */
+  --red-50: #FFF1F2; --red-100: #FFE4E6;
+  --red-400: #FB7185; --red-600: #E11D48; --red-800: #9F1239;
+
+  /* Emerald / Green */
+  --green-50: #F0FDF4; --green-100: #DCFCE7;
+  --green-400: #4ADE80; --green-600: #16A34A; --green-800: #166534;
+
+  /* Violet / Purple */
+  --violet-50: #F5F3FF; --violet-100: #EDE9FE;
+  --violet-400: #A78BFA; --violet-600: #7C3AED;
+
+  /* Navy (legacy compat) */
+  --navy-900: #0F172A; --navy-800: #1E293B; --navy-700: #334155;
+
+  /* Neutral grays */
+  --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1; --gray-400: #94A3B8; --gray-500: #64748B;
+  --gray-600: #475569; --gray-700: #334155; --gray-800: #1E293B;
+
+  /* ─── Semantic tokens ─── */
+  --bg:        #F1F5F9;
+  --surface:   #FFFFFF;
+  --surface2:  #F8FAFC;
+  --text:      #0F172A;
+  --text-muted:#475569;
+  --text-hint: #94A3B8;
+  --border:    rgba(15, 23, 42, 0.08);
+  --border-md: rgba(15, 23, 42, 0.15);
+
+  /* Primary brand gradient */
+  --primary-gradient: linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #0284C7 100%);
+  --sidebar-gradient: linear-gradient(180deg, #0F172A 0%, #1E293B 45%, #1E3A8A 100%);
+
+  /* ─── Shape ─── */
+  --radius:    10px;
   --radius-lg: 14px;
   --radius-xl: 20px;
 
-  /* Shadow */
-  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
-  --shadow-md: 0 2px 8px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  /* ─── Shadow ─── */
+  --shadow:    0 1px 3px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.08);
+  --shadow-md: 0 4px 12px rgba(15,23,42,.10), 0 20px 40px rgba(15,23,42,.12);
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.05);
 
-  /* Layout dimensions */
-  --sidebar-w: 220px;
-  --topbar-h: 56px;
-  --bnav-h: 60px;
-  --safe-b: env(safe-area-inset-bottom, 0px);
+  /* ─── Layout ─── */
+  --sidebar-w:   clamp(224px, 17vw, 272px);
+  --topbar-h:    60px;
+  --bnav-h:      68px;
+  --safe-b:      env(safe-area-inset-bottom, 0px);
+  --safe-t:      env(safe-area-inset-top, 0px);
+
+  /* ─── Density ─── */
+  --control-h:   42px;
+  --control-py:  8px;
+  --control-px:  12px;
+  --card-pad:    clamp(14px, 1.2vw, 20px);
+  --section-gap: 16px;
+  --text-sm:     11px;
+  --text-md:     13px;
+  --text-lg:     15px;
+}
+
+/* ─── Dark mode ─── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #0F172A;
+    --surface:   #1E293B;
+    --surface2:  #162032;
+    --text:      #F1F5F9;
+    --text-muted:#94A3B8;
+    --text-hint: #64748B;
+    --border:    rgba(241,245,249,.10);
+    --border-md: rgba(241,245,249,.18);
+  }
 }
