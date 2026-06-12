@@ -1,5 +1,6 @@
 /* ===== RESPONSIVE BREAKPOINTS ===== */
 @media (max-width: 768px) {
+  .more-drawer { display: block; }
   :root {
     --control-h: 44px;
     --control-py: 8px;

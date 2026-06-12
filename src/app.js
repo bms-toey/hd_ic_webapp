@@ -40,7 +40,7 @@ import {
 import { renderSurveillance } from './modules/surveillance.module.js';
 import {
   renderDailyDashboard, renderSchedulePage, renderAttendancePage, renderResourcePage,
-  renderStockPage, renderDlcAlertPage,
+  renderStockPage, renderDlcAlertPage, getCatheterAlerts,
   setCalView, calPrev, calNext, calToday, calSelectDate,
   openAppointmentModal, editAppointment, closeAppointmentModal, saveAppointment, confirmDeleteAppointment,
   openAttendanceModal, closeAttendanceModal, saveAttendance, exportAttendancePDF,
@@ -59,17 +59,20 @@ const LOGIN_REMEMBER_KEY = `${CONFIG.STORAGE_KEY}_remembered_username`;
 // ── Inject updateBadges into modules that need it ─────────────────────────
 
 function updateBadges() {
-  const due = DB.getSerology().filter(s => s.nextDue && s.nextDue <= todayStr()).length;
+  const due        = DB.getSerology().filter(s => s.nextDue && s.nextDue <= todayStr()).length;
+  const dlcOverdue = getCatheterAlerts().filter(r => r.dlcStatus === 'overdue').length;
 
-  const badgeEl  = document.getElementById('badge-due');
-  const alertBtn = document.getElementById('topbar-alerts');
-  const notifDot = document.getElementById('notif-dot');
-  const bnBadge  = document.getElementById('bn-sero-badge');
+  const badgeEl    = document.getElementById('badge-due');
+  const alertBtn   = document.getElementById('topbar-alerts');
+  const notifDot   = document.getElementById('notif-dot');
+  const bnBadge    = document.getElementById('bn-sero-badge');
+  const bnDlcBadge = document.getElementById('bn-dlc-badge');
 
-  if (badgeEl)  { badgeEl.textContent = due; badgeEl.style.display = due > 0 ? 'inline' : 'none'; }
-  if (bnBadge)  { bnBadge.textContent = due; bnBadge.style.display = due > 0 ? '' : 'none'; }
+  if (badgeEl)    { badgeEl.textContent = due;        badgeEl.style.display    = due        > 0 ? 'inline' : 'none'; }
+  if (bnBadge)    { bnBadge.textContent = due;        bnBadge.style.display    = due        > 0 ? ''       : 'none'; }
+  if (bnDlcBadge) { bnDlcBadge.textContent = dlcOverdue; bnDlcBadge.style.display = dlcOverdue > 0 ? '' : 'none'; }
 
-  const total = due + DB.getInfections().filter(x => x.date?.slice(0, 7) === todayStr().slice(0, 7)).length;
+  const total = due + dlcOverdue + DB.getInfections().filter(x => x.date?.slice(0, 7) === todayStr().slice(0, 7)).length;
   if (notifDot) notifDot.style.display = total > 0 ? 'block' : 'none';
   if (alertBtn) {
     alertBtn.title = total > 0 ? `แจ้งเตือน ${total} รายการ` : 'ไม่มีการแจ้งเตือน';
@@ -160,7 +163,7 @@ const SECTION_DESCRIPTIONS = {
   settings: 'จัดการ User Login สิทธิ์ผู้ใช้งาน และตัวเลือกทั้งหมดในระบบ',
 };
 
-const BN_INDEX = { dashboard:0, patient:1, serology:2, infection:3, surveillance:4 };
+const BN_INDEX = { dashboard:0, schedule:1, attendance:2, 'dlc-alert':3 };
 
 function syncBn(idx) {
   document.querySelectorAll('.bn-item').forEach((b, i) => b.classList.toggle('active', i === idx));
@@ -184,7 +187,7 @@ function showSection(id, el) {
   const breadcrumb = document.getElementById('topbar-breadcrumb');
   if (breadcrumb) breadcrumb.textContent = `HD Dialysis / ${SECTION_TITLES[id] || id}`;
 
-  if (BN_INDEX[id] !== undefined) syncBn(BN_INDEX[id]);
+  syncBn(BN_INDEX[id] ?? 4);
 
   switch (id) {
     case 'dashboard':     renderDashboard(); renderDailyDashboard(); break;
@@ -203,7 +206,7 @@ function showSection(id, el) {
   }
 
   applyPermissions();
-  if (window.innerWidth <= 768) closeSidebar();
+  if (window.innerWidth <= 768) { closeSidebar(); closeMoreDrawer(); }
 }
 
 function refreshActiveSection({ silent = false } = {}) {
@@ -245,6 +248,25 @@ function showReportPanel(panel = 'range') {
     el.hidden = el.dataset.reportPanel !== target;
   });
   if (target === 'monthly') initMonthlyReport('report-monthly');
+}
+
+// ── More Drawer (mobile) ─────────────────────────────────────────────────
+
+function toggleMoreDrawer() {
+  const drawer  = document.getElementById('more-drawer');
+  const overlay = document.getElementById('more-drawer-overlay');
+  const btn     = document.getElementById('bn-more-btn');
+  if (!drawer) return;
+  const isOpen = drawer.classList.contains('open');
+  drawer.classList.toggle('open', !isOpen);
+  overlay?.classList.toggle('open', !isOpen);
+  btn?.classList.toggle('active', !isOpen);
+}
+
+function closeMoreDrawer() {
+  document.getElementById('more-drawer')?.classList.remove('open');
+  document.getElementById('more-drawer-overlay')?.classList.remove('open');
+  document.getElementById('bn-more-btn')?.classList.remove('active');
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
@@ -845,6 +867,7 @@ document.querySelectorAll('#login-username, #login-password').forEach(el => {
 Object.assign(window, {
   // Router
   showSection, toggleSidebar, closeSidebar, toggleSidebarCollapse, refreshActiveSection, syncBn,
+  toggleMoreDrawer, closeMoreDrawer,
 
   // Patient
   savePatient: requirePermission('patient.write', savePatient),

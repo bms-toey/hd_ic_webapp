@@ -181,10 +181,51 @@
 
       <!-- ──────────── DASHBOARD ──────────── -->
       <div id="dashboard" class="section active">
+        <!-- Quick Actions -->
+        <div class="dash-quick-actions" id="dash-quick-actions">
+          <button class="dash-qa-btn" data-permission="operations.write" onclick="openAppointmentModal()">
+            <span class="dash-qa-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+            <span class="dash-qa-label">นัดฟอก</span>
+          </button>
+          <button class="dash-qa-btn" data-permission="operations.write" onclick="openAttendanceModal()">
+            <span class="dash-qa-icon" style="background:linear-gradient(135deg,#0D9488,#2DD4BF)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </span>
+            <span class="dash-qa-label">เช็คชื่อ</span>
+          </button>
+          <button class="dash-qa-btn" data-permission="clinical.write" onclick="openSeroModal()">
+            <span class="dash-qa-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </span>
+            <span class="dash-qa-label">Serology</span>
+          </button>
+          <button class="dash-qa-btn" data-permission="clinical.write" onclick="openInfModal()">
+            <span class="dash-qa-icon" style="background:linear-gradient(135deg,#DC2626,#F87171)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </span>
+            <span class="dash-qa-label">Infection</span>
+          </button>
+          <button class="dash-qa-btn" data-permission="clinical.write" onclick="openAccessModal()">
+            <span class="dash-qa-icon" style="background:linear-gradient(135deg,#D97706,#FBBF24)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 012 2v12H5V7z"/></svg>
+            </span>
+            <span class="dash-qa-label">Vascular Access</span>
+          </button>
+        </div>
         <div id="dash-alerts"></div>
         <!-- KPI Stats Row 1: Patient & Operations -->
+        <div class="dash-section-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          งานไตเทียม
+        </div>
         <div class="dash-stat-grid" id="dash-ops-stats"></div>
         <!-- KPI Stats Row 2: IC / Serology -->
+        <div class="dash-section-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          การควบคุมการติดเชื้อ
+        </div>
         <div class="stat-grid" id="dash-stats"></div>
         <div class="grid-2col">
           <div class="card">
@@ -419,7 +460,7 @@
         <div class="card">
           <div class="card-title card-title-row">
             <span class="card-title-text"><span class="dot"></span>ติดตาม DLC / PC / TLC ตามระยะวัน</span>
-            <select id="dlc-filter" onchange="renderDlcAlertPage()" style="min-height:36px;padding:5px 10px;border:1px solid var(--border-md);border-radius:10px;font-size:12.5px;background:var(--surface2);">
+            <select id="dlc-filter" onchange="renderDlcAlertPage()" class="dlc-filter-select">
               <option value="">ทั้งหมด</option>
               <option value="overdue">เกินกำหนด (≥90 วัน)</option>
               <option value="warning">ใกล้ครบ (60–89 วัน)</option>
@@ -434,11 +475,11 @@
       <div id="report" class="section">
         <div class="settings-tabs report-tabs" role="tablist" aria-label="Report sections">
           <button class="settings-tab active" type="button" role="tab" aria-selected="true" data-report-tab="range" onclick="showReportPanel('range')">
-            <span>📋</span>
+            <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
             <strong>รายงานตามช่วงวันที่</strong>
           </button>
           <button class="settings-tab" type="button" role="tab" aria-selected="false" data-report-tab="monthly" onclick="showReportPanel('monthly')">
-            <span>📊</span>
+            <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
             <strong>สรุปข้อมูลรายเดือน / Export</strong>
           </button>
         </div>
@@ -449,7 +490,7 @@
               <div class="field"><label>จากวันที่</label><input type="date" id="rpt-from"></div>
               <div class="field"><label>ถึงวันที่</label><input type="date" id="rpt-to"></div>
               <div class="field field-action">
-                <button class="btn btn-primary" onclick="generateReport()">📊 สร้างรายงาน</button>
+                <button class="btn btn-primary" onclick="generateReport()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-.15em;margin-right:5px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>สร้างรายงาน</button>
               </div>
             </div>
           </div>
@@ -463,7 +504,7 @@
               <div class="field"><label>เดือนที่ 1</label><input type="month" id="report-monthly-from"></div>
               <div class="field"><label>เดือนที่ 2</label><input type="month" id="report-monthly-to"></div>
               <div class="field field-action">
-                <button class="btn btn-primary" onclick="renderMonthlyReport('report-monthly')">📊 สร้างสรุปรายเดือน</button>
+                <button class="btn btn-primary" onclick="renderMonthlyReport('report-monthly')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-.15em;margin-right:5px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>สร้างสรุปรายเดือน</button>
               </div>
             </div>
           </div>
@@ -471,16 +512,27 @@
           <div class="card export-card">
             <div class="card-title"><span class="dot"></span>จัดการข้อมูลระบบ</div>
             <div class="btn-group">
-              <button class="btn btn-primary"  data-permission="data.admin" onclick="loadDemoData()">🧪 โหลด Demo Data</button>
-              <button class="btn btn-outline"  data-permission="data.export" onclick="exportJSON()">⬇️ Export JSON</button>
-              <button class="btn btn-outline"  data-permission="data.export" onclick="exportCSV()">📄 Export CSV</button>
-              <button class="btn btn-outline"  data-permission="data.import" onclick="importJSON()">⬆️ Import JSON</button>
-              <button class="btn btn-outline"  onclick="logout()">ออกจากระบบ</button>
-              <button class="btn btn-danger"   data-permission="data.admin" onclick="clearAll()">🗑️ ล้างข้อมูลทั้งหมด</button>
+              <button class="btn btn-outline" data-permission="data.export" onclick="exportJSON()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-.15em;margin-right:5px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON
+              </button>
+              <button class="btn btn-outline" data-permission="data.export" onclick="exportCSV()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-.15em;margin-right:5px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Export CSV
+              </button>
+              <button class="btn btn-outline" data-permission="data.import" onclick="importJSON()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-.15em;margin-right:5px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="17"/></svg>Import JSON
+              </button>
             </div>
-            <p class="hint-text">
-              ข้อมูลเก็บใน Local Storage · Export ข้อมูลสำรองไว้เป็นประจำ
-            </p>
+            <p class="hint-text" style="margin-bottom:14px">ข้อมูลเก็บใน Local Storage · Export ข้อมูลสำรองไว้เป็นประจำ</p>
+            <div class="danger-zone" data-permission="data.admin">
+              <div class="danger-zone-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-.1em;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Danger Zone
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-outline" onclick="loadDemoData()">โหลด Demo Data</button>
+                <button class="btn btn-danger" onclick="clearAll()">ล้างข้อมูลทั้งหมด</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -489,11 +541,11 @@
       <div id="settings" class="section">
         <div class="settings-tabs" role="tablist" aria-label="Settings sections">
           <button class="settings-tab active" type="button" role="tab" aria-selected="true" data-settings-tab="options" onclick="showSettingsPanel('options')">
-            <span>⚙</span>
+            <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M20 12h-2M6 12H4M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 20v-2M12 6V4"/></svg></span>
             <strong>ตั้งค่าตัวเลือกทั้งหมด</strong>
           </button>
           <button class="settings-tab" type="button" role="tab" aria-selected="false" data-settings-tab="users" onclick="showSettingsPanel('users')">
-            <span>👤</span>
+            <span class="tab-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
             <strong>User Login</strong>
           </button>
         </div>
@@ -1051,23 +1103,102 @@
 <nav class="bottom-nav" id="bottom-nav" aria-label="เมนูหลัก">
   <div class="bottom-nav-inner">
     <button class="bn-item active" onclick="showSection('dashboard',null);syncBn(0)" aria-label="ภาพรวม">
-      <span class="bn-icon">📊</span><span class="bn-label">ภาพรวม</span>
+      <span class="bn-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </span>
+      <span class="bn-label">ภาพรวม</span>
     </button>
-    <button class="bn-item" onclick="showSection('patient',null);syncBn(1)" aria-label="ผู้ป่วย">
-      <span class="bn-icon">🧑‍⚕️</span><span class="bn-label">ผู้ป่วย</span>
+    <button class="bn-item" onclick="showSection('schedule',null);syncBn(1)" aria-label="ตารางนัด">
+      <span class="bn-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </span>
+      <span class="bn-label">ตารางนัด</span>
     </button>
-    <button class="bn-item" onclick="showSection('serology',null);syncBn(2)" aria-label="Serology">
-      <span class="bn-icon">🩸</span><span class="bn-label">Serology</span>
-      <span class="bn-badge" id="bn-sero-badge" style="display:none">0</span>
+    <button class="bn-item" onclick="showSection('attendance',null);syncBn(2)" aria-label="เช็คชื่อ">
+      <span class="bn-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </span>
+      <span class="bn-label">เช็คชื่อ</span>
     </button>
-    <button class="bn-item" onclick="showSection('infection',null);syncBn(3)" aria-label="Infection">
-      <span class="bn-icon">🦠</span><span class="bn-label">Infection</span>
+    <button class="bn-item" onclick="showSection('dlc-alert',null);syncBn(3)" aria-label="แจ้งเตือน DLC">
+      <span class="bn-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </span>
+      <span class="bn-label">แจ้งเตือน</span>
+      <span class="bn-badge" id="bn-dlc-badge" style="display:none">0</span>
     </button>
-    <button class="bn-item" onclick="showSection('surveillance',null);syncBn(4)" aria-label="Surveillance">
-      <span class="bn-icon">📈</span><span class="bn-label">รายงาน</span>
+    <button class="bn-item" id="bn-more-btn" onclick="toggleMoreDrawer()" aria-label="เพิ่มเติม">
+      <span class="bn-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </span>
+      <span class="bn-label">เพิ่มเติม</span>
     </button>
   </div>
 </nav>
+
+<!-- More Drawer (mobile) -->
+<div class="more-drawer-overlay" id="more-drawer-overlay" onclick="closeMoreDrawer()"></div>
+<div class="more-drawer" id="more-drawer" role="dialog" aria-modal="true" aria-label="เมนูทั้งหมด">
+  <div class="more-drawer-handle"></div>
+  <p class="more-drawer-title">เมนูทั้งหมด</p>
+  <div class="more-drawer-grid">
+    <button class="more-drawer-item" onclick="showSection('patient',document.querySelector('[data-nav-section=patient]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      </span>
+      <span class="more-drawer-item-label">ผู้ป่วย</span>
+    </button>
+    <button class="more-drawer-item" onclick="showSection('serology',document.querySelector('[data-nav-section=serology]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </span>
+      <span class="more-drawer-item-label">Serology</span>
+      <span class="more-drawer-item-badge" id="bn-sero-badge" style="display:none">0</span>
+    </button>
+    <button class="more-drawer-item" onclick="showSection('access',document.querySelector('[data-nav-section=access]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 012 2v12H5V7z"/><path d="M9 20v2"/><path d="M15 20v2"/></svg>
+      </span>
+      <span class="more-drawer-item-label">Vascular Access</span>
+    </button>
+    <button class="more-drawer-item" onclick="showSection('infection',document.querySelector('[data-nav-section=infection]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+      </span>
+      <span class="more-drawer-item-label">Infection Events</span>
+    </button>
+    <button class="more-drawer-item" onclick="showSection('surveillance',document.querySelector('[data-nav-section=surveillance]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </span>
+      <span class="more-drawer-item-label">Surveillance</span>
+    </button>
+    <button class="more-drawer-item" onclick="showSection('report',document.querySelector('[data-nav-section=report]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      </span>
+      <span class="more-drawer-item-label">รายงาน</span>
+    </button>
+    <button class="more-drawer-item" onclick="showSection('resources',document.querySelector('[data-nav-section=resources]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </span>
+      <span class="more-drawer-item-label">เตียง/เครื่อง</span>
+    </button>
+    <button class="more-drawer-item" onclick="showSection('stock',document.querySelector('[data-nav-section=stock]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      </span>
+      <span class="more-drawer-item-label">สต็อก</span>
+    </button>
+    <button class="more-drawer-item" onclick="showSection('settings',document.querySelector('[data-nav-section=settings]'))">
+      <span class="more-drawer-item-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </span>
+      <span class="more-drawer-item-label">ตั้งค่า</span>
+    </button>
+  </div>
+</div>
 
 <!-- App entry point (ES Module) -->
 <script type="module" src="src/app.js"></script>

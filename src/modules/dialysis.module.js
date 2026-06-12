@@ -572,48 +572,41 @@ export function renderAttendancePage() {
     return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
   };
 
-  el.innerHTML = `<div class="att-table-wrap"><table class="att-table">
-    <thead>
-      <tr>
-        <th>HN</th>
-        <th>ชื่อ-นามสกุล</th>
-        <th>อายุ</th>
-        <th>สิทธิ์</th>
-        <th>DW (kg)</th>
-        <th>Vascular</th>
-        <th>รอบ</th>
-        <th>สถานะ</th>
-        <th>เวลา</th>
-        <th>จัดการ</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rows.map(({ appointment: a, attendance }) => {
-        const p = appointmentPatient(a);
-        const status = attendance?.status || 'ยังไม่มา';
-        const vType = patientAccessType(p);
-        const vBadge = { AVF: 'badge-ok', AVG: 'badge-info', PC: 'badge-pend', DLC: 'badge-pos', TLC: 'badge-pend' };
-        return `<tr>
-          <td class="td-hn">${h(p?.hn || '-')}</td>
-          <td class="td-name">${h(p?.name || '-')}</td>
-          <td class="td-num">${ageCalc(p?.dob)}</td>
-          <td class="td-muted">${hd(p?.coverage) || '-'}</td>
-          <td class="td-num">${h(p?.dryWeight || '-')}</td>
-          <td>${vType ? `<span class="badge ${vBadge[vType] || 'badge-gray'}">${h(vType)}</span>` : '-'}</td>
-          <td class="td-muted">${h(a.shift?.replace(' (เช้า)', '').replace(' (บ่าย)', '').replace(' (เย็น)', '') || '-')}</td>
-          <td>${statusBadge(status)}</td>
-          <td class="td-num" style="font-size:11.5px">${h(attendance?.time || '-')}</td>
-          <td>
-            <div class="td-actions">
-              <button class="btn btn-primary btn-sm" onclick="openAttendanceModal(${jsArg(a.id)})" title="เช็คชื่อ / บันทึก">
-                ${status === 'มาแล้ว' ? '✏️' : '✓'} ${status === 'มาแล้ว' ? 'แก้ไข' : 'เช็ค'}
-              </button>
-            </div>
-          </td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table></div>`;
+  el.innerHTML = `<div class="att-list">
+    ${rows.map(({ appointment: a, attendance }) => {
+      const p = appointmentPatient(a);
+      const status = attendance?.status || 'ยังไม่มา';
+      const vType = patientAccessType(p);
+      const vBadge = { AVF: 'badge-ok', AVG: 'badge-info', PC: 'badge-pend', DLC: 'badge-pos', TLC: 'badge-pend' };
+      const shiftShort = (a.shift || '')
+        .replace('Shift 1 (เช้า)', 'S1 เช้า')
+        .replace('Shift 2 (บ่าย)', 'S2 บ่าย')
+        .replace('Shift 3 (เย็น)', 'S3 เย็น');
+      const rowCls = { 'มาแล้ว': 'att-ok', 'ยังไม่มา': 'att-pending', 'งดฟอก': 'att-skip', 'เลื่อนนัด': 'att-delay' }[status] || 'att-pending';
+      const age = ageCalc(p?.dob);
+      return `<div class="att-row ${rowCls}">
+        <div class="att-row-body">
+          <div class="att-row-top">
+            <span class="att-row-name">${h(p?.name || '-')}</span>
+            <span class="att-row-hn">${h(p?.hn || '-')}</span>
+          </div>
+          <div class="att-row-tags">
+            ${vType ? `<span class="badge ${vBadge[vType] || 'badge-gray'}">${h(vType)}</span>` : ''}
+            ${shiftShort ? `<span class="att-tag">${shiftShort}</span>` : ''}
+            ${p?.dryWeight ? `<span class="att-tag">DW ${h(p.dryWeight)} kg</span>` : ''}
+            ${attendance?.time ? `<span class="att-tag">${h(attendance.time)}</span>` : ''}
+            ${age !== '-' ? `<span class="att-tag att-tag-muted">อายุ ${age} ปี</span>` : ''}
+            ${p?.coverage ? `<span class="att-tag att-tag-muted">${hd(p.coverage)}</span>` : ''}
+          </div>
+          <div class="att-row-status">${statusBadge(status)}</div>
+        </div>
+        <button class="btn ${status === 'มาแล้ว' ? 'btn-outline' : 'btn-primary'} btn-sm att-action-btn"
+          onclick="openAttendanceModal(${jsArg(a.id)})">
+          ${status === 'มาแล้ว' ? 'แก้ไข' : 'เช็ค'}
+        </button>
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 
 export function exportAttendancePDF() {
@@ -775,11 +768,17 @@ export function renderStockPage() {
     </div>` : emptyHtml('ยังไม่มีรายการเวชภัณฑ์');
   }
   if (moves) {
-    const list = [...DB.getStockMoves()].slice(-8).reverse();
-    moves.innerHTML = list.length ? list.map(m => {
+    const list = [...DB.getStockMoves()].slice(-10).reverse();
+    moves.innerHTML = list.length ? `<div class="stock-move-list">${list.map(m => {
       const item = byId(items, m.itemId);
-      return `<div class="due-item"><span class="hn">${h(m.type || '-')}</span><span class="flex-fill">${h(item?.name || '-')}</span><span>${h(m.qty || 0)} ${h(item?.unit || '')}</span><span>${thDate(m.date)}</span><span>${h(m.staff || '-')}</span></div>`;
-    }).join('') : emptyHtml('ยังไม่มีประวัติรับเข้า/เบิกใช้');
+      const isIn = m.type === 'รับเข้า';
+      return `<div class="stock-move-row">
+        <span class="stock-move-type ${isIn ? 'smt-in' : 'smt-out'}">${h(m.type || '-')}</span>
+        <span class="stock-move-name">${h(item?.name || '-')}</span>
+        <span class="stock-move-qty">${h(m.qty || 0)} ${h(item?.unit || '')}</span>
+        <span class="stock-move-meta">${thDate(m.date)} · ${h(m.staff || '-')}</span>
+      </div>`;
+    }).join('')}</div>` : emptyHtml('ยังไม่มีประวัติรับเข้า/เบิกใช้');
   }
   fillStockSelect('move-item');
 }
@@ -875,7 +874,7 @@ export function closeStockMoveModal() {
 
 const DLC_WARN_START = 60;   // เริ่มเตือน 60 วัน
 
-function getCatheterAlerts() {
+export function getCatheterAlerts() {
   return activePatients().map(p => {
     const access = latestAccess(p.id);
     const type = normalizeAccess(p.vascularType || access?.type || '');
@@ -899,32 +898,39 @@ export function renderDlcAlertPage() {
   const warningRows = allRows.filter(r => r.dlcStatus === 'warning');
 
   if (summaryEl) {
+    const normalCount = activePatients().filter(p => {
+      const acc = latestAccess(p.id);
+      const type = normalizeAccess(p.vascularType || acc?.type || '');
+      const start = acc?.insertDate || p.start;
+      if (!CATHETER_TYPES.some(t => normalizeAccess(t) === type) || !start) return false;
+      return diffDays(start, todayStr()) < DLC_WARN_START;
+    }).length;
     summaryEl.innerHTML = `<div class="dlc-summary-row">
       <div class="dlc-summary-card dlc-sc-overdue">
-        <div class="dlc-summary-icon">🔴</div>
+        <div class="dlc-summary-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
         <div class="dlc-summary-body">
           <strong>${overdueRows.length}</strong>
           <span>เกินกำหนด (≥ 90 วัน)</span>
         </div>
       </div>
       <div class="dlc-summary-card dlc-sc-warning">
-        <div class="dlc-summary-icon">🟡</div>
+        <div class="dlc-summary-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
         <div class="dlc-summary-body">
           <strong>${warningRows.length}</strong>
           <span>ใกล้ครบกำหนด (60–89 วัน)</span>
         </div>
       </div>
       <div class="dlc-summary-card dlc-sc-normal">
-        <div class="dlc-summary-icon">✅</div>
+        <div class="dlc-summary-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
         <div class="dlc-summary-body">
-          <strong>${activePatients().filter(p => {
-            const acc = latestAccess(p.id);
-            const type = normalizeAccess(p.vascularType || acc?.type || '');
-            const start = acc?.insertDate || p.start;
-            if (!CATHETER_TYPES.some(t => normalizeAccess(t) === type) || !start) return false;
-            return diffDays(start, todayStr()) < DLC_WARN_START;
-          }).length}</strong>
-          <span>ปกติ (< 60 วัน)</span>
+          <strong>${normalCount}</strong>
+          <span>ปกติ (&lt; 60 วัน)</span>
         </div>
       </div>
     </div>`;
@@ -947,40 +953,38 @@ export function renderDlcAlertPage() {
   }
 
   const dlcStatusBadge = (status) => {
-    if (status === 'overdue') return `<span class="dlc-status-badge dlc-status-overdue">🔴 เกินกำหนด</span>`;
-    return `<span class="dlc-status-badge dlc-status-warning">🟡 ใกล้ครบ</span>`;
+    if (status === 'overdue') return `<span class="dlc-status-badge dlc-status-overdue">เกินกำหนด</span>`;
+    return `<span class="dlc-status-badge dlc-status-warning">ใกล้ครบ</span>`;
   };
 
-  el.innerHTML = `<div class="dlc-table-wrap"><table class="dlc-table">
-    <thead>
-      <tr>
-        <th>HN</th>
-        <th>ชื่อ-นามสกุล</th>
-        <th>ประเภท</th>
-        <th>ตำแหน่ง</th>
-        <th>วันที่ใส่</th>
-        <th>จำนวนวัน</th>
-        <th>สถานะ</th>
-        <th>สิทธิ์ / โทร</th>
-        <th>จัดการ</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rows.map(row => `<tr class="dlc-row-${row.dlcStatus}">
-        <td class="td-hn" style="font-family:'IBM Plex Mono',monospace;font-weight:800;color:var(--blue-600)">${h(row.patient.hn || '-')}</td>
-        <td style="font-weight:700;color:var(--navy-900)">${h(row.patient.name || '-')}</td>
-        <td><span class="badge ${row.dlcStatus === 'overdue' ? 'badge-pos' : 'badge-pend'}">${h(row.type)}</span></td>
-        <td style="color:var(--text-muted);font-size:12px">${hd(row.access?.site) || '-'}</td>
-        <td style="font-size:12px">${thDate(row.access?.insertDate || row.patient.start)}</td>
-        <td style="font-family:'IBM Plex Mono',monospace;font-weight:800;color:${row.dlcStatus === 'overdue' ? 'var(--red-600)' : 'var(--amber-600)'}">
-          ${row.days} วัน
-        </td>
-        <td>${dlcStatusBadge(row.dlcStatus)}</td>
-        <td style="font-size:12px;color:var(--text-muted)">${hd(row.patient.coverage) || '-'}<br><small>${hd(row.patient.phone) || ''}</small></td>
-        <td>
-          <button class="btn btn-outline btn-sm" onclick="showSection('access',document.querySelector('[data-nav-section=access]'))" title="ดูหน้า Access">ดู Access</button>
-        </td>
-      </tr>`).join('')}
-    </tbody>
-  </table></div>`;
+  el.innerHTML = `<div class="dlc-card-list">
+    ${rows.map(row => {
+      const isOverdue = row.dlcStatus === 'overdue';
+      return `<div class="dlc-card ${isOverdue ? 'dlc-card-overdue' : 'dlc-card-warning'}">
+        <div class="dlc-days-box">
+          <strong>${row.days}</strong>
+          <span>วัน</span>
+        </div>
+        <div class="dlc-card-body">
+          <div class="dlc-card-name">${h(row.patient.name || '-')}</div>
+          <div class="dlc-card-meta">
+            <span class="att-row-hn">${h(row.patient.hn || '-')}</span>
+            <span class="badge ${isOverdue ? 'badge-pos' : 'badge-pend'}">${h(row.type)}</span>
+            ${row.access?.site ? `<span class="att-tag att-tag-muted">${hd(row.access.site)}</span>` : ''}
+          </div>
+          <div class="dlc-card-sub">
+            ${dlcStatusBadge(row.dlcStatus)}
+            <span class="att-tag att-tag-muted">ใส่ ${thDate(row.access?.insertDate || row.patient.start)}</span>
+            ${row.patient.coverage ? `<span class="att-tag att-tag-muted">${hd(row.patient.coverage)}</span>` : ''}
+            ${row.patient.phone ? `<span class="att-tag att-tag-muted">${hd(row.patient.phone)}</span>` : ''}
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm dlc-view-btn"
+          onclick="showSection('access',document.querySelector('[data-nav-section=access]'))" title="ดูหน้า Access">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          ดู
+        </button>
+      </div>`;
+    }).join('')}
+  </div>`;
 }
